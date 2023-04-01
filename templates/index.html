@@ -22,7 +22,7 @@
         {% for user in all_users %}
           <p class="post-meta">User :
             <a href="#">{{ user.id }} - {{ user.name }} - {{ user.email }} - {{ user.password }}</a>
-            <a href="{{url_for('delete_user', user_id=user.id) }}" style="color:red;">✘</a>
+            <a class = "text-danger" href="{{url_for('delete_user', user_id=user.id) }}">✘</a>
           </p>
         {% endfor %}
       </div>
@@ -46,7 +46,9 @@
           <p class="post-meta">Posted by
             <a href="#">{{post.author}}</a>
             on {{post.date}}
-            <a href="{{url_for('delete_post', post_id=post.id) }}">✘</a>        
+            
+            <a class = "text-danger" href="{{url_for('delete_post', post_id=post.id) }}">✘</a>
+            
           </p>
         </div>
         <hr>

@@ -20,11 +20,20 @@
   </header>
 
   <div class="container">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for message in messages %}
+        <div class="row">
+          <div class="col-lg-8 col-md-10 mx-auto content">
+            <p>{{ message }}</p>
+          </div>
+        </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %} 
     <div class="row">
       <div class="col-lg-8 col-md-10 mx-auto">
-        
        {{ wtf.quick_form(form, novalidate=True, button_map={"submit": "primary"}) }}
-
       </div>
     </div>
   </div>
