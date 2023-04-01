@@ -1,16 +1,17 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
 from flask_bootstrap import Bootstrap
 from flask_ckeditor import CKEditor
+
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import exc
 from sqlalchemy.orm import relationship
-from forms import CreatePostForm, RegisterForm
 
-import os, pytz, datetime
+from forms import CreatePostForm, RegisterForm, LoginForm
 
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
 from flask_gravatar import Gravatar
+import os, pytz, datetime
 
 # -----------------------------------------------------------------
 # APP CONFIG
@@ -20,6 +21,17 @@ app.config['SECRET_KEY'] = os.environ['form_token']
 ckeditor = CKEditor(app)
 Bootstrap(app)
 
+# -----------------------------------------------------------------
+# USER CONFIG
+# -----------------------------------------------------------------
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+@login_manager.user_loader
+def load_user(user_id):
+  find_user = User.query.get(int(user_id))
+  return find_user
+  
 # -----------------------------------------------------------------
 # DATABASE CONNECTIONS
 # -----------------------------------------------------------------
@@ -85,10 +97,10 @@ with app.app_context() : db.create_all()
 # ROUTES & FUNCTIONS - NO DB INVOLVED
 # -----------------------------------------------------------------
 @app.route("/about")
-def about(): return render_template("about.html")
+def about(): return render_template("about.html", logged_in=current_user.is_authenticated)
 
 @app.route("/contact")
-def contact(): return render_template("contact.html") 
+def contact(): return render_template("contact.html", logged_in=current_user.is_authenticated) 
 
 # -----------------------------------------------------------------
 # ROUTES & FUNCTIONS - POSTS
@@ -97,16 +109,17 @@ def contact(): return render_template("contact.html")
 def get_all_posts():
     posts = db.session.query(BlogPost).all()
     users = db.session.query(User).all()
-    return render_template("index.html", all_posts = posts, all_users = users)
+    return render_template("index.html", all_posts = posts, all_users = users, logged_in=current_user.is_authenticated)
 
 @app.route("/post/<int:post_id>")
 def show_post(post_id):
     requested_post = BlogPost.query.get(post_id)
-    return render_template("post.html", post=requested_post)
+    return render_template("post.html", post=requested_post, logged_in=current_user.is_authenticated)
 
 
 
 @app.route("/new-post", methods = ["GET", "POST"])
+@login_required
 def add_new_post() :
     pform = CreatePostForm()
     date_post  = get_datePost()
@@ -123,9 +136,10 @@ def add_new_post() :
         img_url  = pform.img_url.data,
       )
       if add_data_to_db(new_post) is not False : return redirect(url_for("get_all_posts"))
-    else : return render_template("make-post.html", form = pform)
+    else : return render_template("make-post.html", form = pform, logged_in=current_user.is_authenticated)
 
 @app.route("/edit-post/<int:post_id>", methods=["GET", "POST"])
+@login_required
 def edit_post(post_id) :
     find_post  = BlogPost.query.get(post_id)
     edit_form  = CreatePostForm(
@@ -143,11 +157,12 @@ def edit_post(post_id) :
       find_post.body     = edit_form.body.data
       db.session.commit()
       return redirect(url_for("show_post", post_id=find_post.id))
-    return render_template("make-post.html", form=edit_form)
+    return render_template("make-post.html", form=edit_form, logged_in=current_user.is_authenticated)
 
 
 
 @app.route("/delete/<int:post_id>")
+@login_required
 def delete_post(post_id) :
     findPost = BlogPost.query.get(post_id)
     db.session.delete(findPost)
@@ -169,19 +184,34 @@ def register() :
         email    = rform.email.data,
         password = hash_salt_passw(rform.passw.data)
       )
-    if add_data_to_db(new_user) is not False : return redirect(url_for("get_all_posts"))
-  return render_template("register.html", form = rform)
+    if add_data_to_db(new_user) is not False : 
+      login_user(new_user); return redirect(url_for("get_all_posts"))
+  return render_template("register.html", form = rform, logged_in=current_user.is_authenticated)
 
 @app.route('/delete/<int:user_id>')
+@login_required
 def delete_user(user_id) :
   findUser = User.query.get(user_id)
   db.session.delete(findUser)
 
-@app.route('/login')
-def login() : return render_template("login.html")
+@app.route('/login', methods=["GET", "POST"])
+def login() :
+  lform = LoginForm()
+  if request.method == 'POST' and lform.validate_on_submit() :
+    mail  = lform.email.data
+    passw = lform.passw.data
+    find_user = User.query.filter_by( email=mail ).first()
+    if not find_user : 
+      redirect(url_for("login"))
+    elif not check_password_hash(find_user.password, passw) : 
+      redirect(url_for("login"))
+    else : login_user(find_user); return redirect(url_for("get_all_posts"))
+  elif current_user.is_authenticated : return redirect(url_for("get_all_posts"))
+  else : return render_template("login.html", form = lform, logged_in=current_user.is_authenticated)
 
 @app.route('/logout')
-def logout() : return redirect(url_for('get_all_posts'))
+@login_required
+def logout() : logout_user(); return redirect(url_for('get_all_posts'))
 
 # -----------------------------------------------------------------
 # HOST & PORT
