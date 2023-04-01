@@ -33,46 +33,32 @@ class BlogPost(db.Model):
     body = db.Column(db.Text, nullable=False)
     img_url = db.Column(db.String(250), nullable=False)
 
-with app.app_context() : 
-  db.create_all()
-
+with app.app_context() : db.create_all()
 
 @app.route('/')
 def get_all_posts():
     posts = BlogPost.query.all()
     return render_template("index.html", all_posts=posts)
 
-
 @app.route('/register')
-def register():
-    return render_template("register.html")
-
+def register(): return render_template("register.html")
 
 @app.route('/login')
-def login():
-    return render_template("login.html")
-
+def login(): return render_template("login.html")
 
 @app.route('/logout')
-def logout():
-    return redirect(url_for('get_all_posts'))
-
+def logout(): return redirect(url_for('get_all_posts'))
 
 @app.route("/post/<int:post_id>")
 def show_post(post_id):
     requested_post = BlogPost.query.get(post_id)
     return render_template("post.html", post=requested_post)
 
-
 @app.route("/about")
-def about():
-    return render_template("about.html")
-
+def about(): return render_template("about.html")
 
 @app.route("/contact")
-def contact():
-    return render_template("contact.html")
-
+def contact(): return render_template("contact.html")
 
 @app.route("/new-post")
 def add_new_post():
@@ -90,7 +76,6 @@ def add_new_post():
         db.session.commit()
         return redirect(url_for("get_all_posts"))
     return render_template("make-post.html", form=form)
-
 
 @app.route("/edit-post/<int:post_id>")
 def edit_post(post_id):
@@ -113,7 +98,6 @@ def edit_post(post_id):
 
     return render_template("make-post.html", form=edit_form)
 
-
 @app.route("/delete/<int:post_id>")
 def delete_post(post_id):
     post_to_delete = BlogPost.query.get(post_id)
@@ -121,6 +105,5 @@ def delete_post(post_id):
     db.session.commit()
     return redirect(url_for('get_all_posts'))
 
-
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+    app.run(debug=True,host='0.0.0.0', port=5000)
