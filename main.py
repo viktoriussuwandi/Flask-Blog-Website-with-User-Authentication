@@ -1,109 +1,195 @@
-from flask import Flask, render_template, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
 from flask_bootstrap import Bootstrap
 from flask_ckeditor import CKEditor
-from datetime import date
-from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import exc
 from sqlalchemy.orm import relationship
-from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
-from forms import CreatePostForm
-from flask_gravatar import Gravatar
-import os
+from forms import CreatePostForm, RegisterForm
 
+import os, pytz, datetime
+
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
+from flask_gravatar import Gravatar
+
+# -----------------------------------------------------------------
+# APP CONFIG
+# -----------------------------------------------------------------
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ['form_token']
 ckeditor = CKEditor(app)
 Bootstrap(app)
 
-##CONNECT TO DB
+# -----------------------------------------------------------------
+# DATABASE CONNECTIONS
+# -----------------------------------------------------------------
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
+# -----------------------------------------------------------------
+# TABLE CONFIG
+# -----------------------------------------------------------------
 
-##CONFIGURE TABLES
+def add_data_to_db(new_data) :
+  try :
+    db.session.add(new_data)
+    #Log in and authenticate user after adding details to database.
+    # login_user(new_data)
+    return db.session.commit()
+  except exc.IntegrityError :
+    db.session.rollback()
+    return False
 
+def hash_salt_passw(passw) :
+  new_passw = generate_password_hash(
+    passw, 
+    method='pbkdf2:sha256', 
+    salt_length=8)
+  return new_passw
+
+def get_datePost() :
+  dt         = datetime.datetime
+  # ip_address = request.remote_addr
+  timezone   = "Asia/Jakarta"
+  myZone     = pytz.timezone(timezone)
+  date_post  = dt.now(myZone).strftime("%B %d, %Y")
+  return date_post 
+  
 class BlogPost(db.Model):
-    __tablename__ = "blog_posts"
-    id = db.Column(db.Integer, primary_key=True)
-    author = db.Column(db.String(250), nullable=False)
-    title = db.Column(db.String(250), unique=True, nullable=False)
-    subtitle = db.Column(db.String(250), nullable=False)
-    date = db.Column(db.String(250), nullable=False)
-    body = db.Column(db.Text, nullable=False)
-    img_url = db.Column(db.String(250), nullable=False)
+  __tablename__ = "blog_posts"
+  id = db.Column(db.Integer, primary_key=True)
+  author = db.Column(db.String(250), nullable=False)
+  title = db.Column(db.String(250), unique=True, nullable=False)
+  subtitle = db.Column(db.String(250), nullable=False)
+  date = db.Column(db.String(250), nullable=False)
+  body = db.Column(db.Text, nullable=False)
+  img_url = db.Column(db.String(250), nullable=False)
+  
+  def __repr__(self) : return '<BlogPost {self.title}>'
+  def to_dict(self) : return {col.name : getattr(self, col.name) for col in self.__table__.columns}
 
+class User(UserMixin, db.Model) :
+  __tablename__ = "users"
+  id       = db.Column(db.Integer, primary_key=True)
+  email    = db.Column(db.String(250), unique=True, nullable=False)
+  password = db.Column(db.String, nullable=False)
+  username = db.Column(db.String(250), nullable=False)
+  
+  def __repr__(self) : return '<User {self.title}>'
+  def to_dict(self) : return {col.name : getattr(self, col.name) for col in self.__table__.columns}
+  
 with app.app_context() : db.create_all()
 
+# -----------------------------------------------------------------
+# ROUTES & FUNCTIONS - NO DB INVOLVED
+# -----------------------------------------------------------------
+@app.route("/about")
+def about(): return render_template("about.html")
+
+@app.route("/contact")
+def contact(): return render_template("contact.html") 
+
+# -----------------------------------------------------------------
+# ROUTES & FUNCTIONS - POSTS
+# -----------------------------------------------------------------
 @app.route('/')
 def get_all_posts():
-    posts = BlogPost.query.all()
-    return render_template("index.html", all_posts=posts)
-
-@app.route('/register')
-def register(): return render_template("register.html")
-
-@app.route('/login')
-def login(): return render_template("login.html")
-
-@app.route('/logout')
-def logout(): return redirect(url_for('get_all_posts'))
+    posts = db.session.query(BlogPost).all()
+    users = db.session.query(User).all()
+    return render_template("index.html", all_posts = posts, all_users = users)
 
 @app.route("/post/<int:post_id>")
 def show_post(post_id):
     requested_post = BlogPost.query.get(post_id)
     return render_template("post.html", post=requested_post)
 
-@app.route("/about")
-def about(): return render_template("about.html")
 
-@app.route("/contact")
-def contact(): return render_template("contact.html")
 
-@app.route("/new-post")
-def add_new_post():
-    form = CreatePostForm()
-    if form.validate_on_submit():
-        new_post = BlogPost(
-            title=form.title.data,
-            subtitle=form.subtitle.data,
-            body=form.body.data,
-            img_url=form.img_url.data,
-            author=current_user,
-            date=date.today().strftime("%B %d, %Y")
-        )
-        db.session.add(new_post)
-        db.session.commit()
-        return redirect(url_for("get_all_posts"))
-    return render_template("make-post.html", form=form)
+@app.route("/new-post", methods = ["GET", "POST"])
+def add_new_post() :
+    pform = CreatePostForm()
+    date_post  = get_datePost()
+    if request.method == 'POST' and pform.validate_on_submit():
+      count_post = db.session.query(BlogPost).count()
+      new_post   = BlogPost(
+        id       = count_post + 1,
+        # Dont forget change to current_user
+        author   = pform.author.data,
+        title    = pform.title.data,
+        subtitle = pform.subtitle.data,
+        date     = date_post,
+        body     = pform.body.data,
+        img_url  = pform.img_url.data,
+      )
+      if add_data_to_db(new_post) is not False : return redirect(url_for("get_all_posts"))
+    else : return render_template("make-post.html", form = pform)
 
-@app.route("/edit-post/<int:post_id>")
-def edit_post(post_id):
-    post = BlogPost.query.get(post_id)
-    edit_form = CreatePostForm(
-        title=post.title,
-        subtitle=post.subtitle,
-        img_url=post.img_url,
-        author=post.author,
-        body=post.body
+@app.route("/edit-post/<int:post_id>", methods=["GET", "POST"])
+def edit_post(post_id) :
+    find_post  = BlogPost.query.get(post_id)
+    edit_form  = CreatePostForm(
+      title    = find_post.title,
+      subtitle = find_post.subtitle,
+      img_url  = find_post.img_url,
+      author   = find_post.author,
+      body     = find_post.body
     )
-    if edit_form.validate_on_submit():
-        post.title = edit_form.title.data
-        post.subtitle = edit_form.subtitle.data
-        post.img_url = edit_form.img_url.data
-        post.author = edit_form.author.data
-        post.body = edit_form.body.data
-        db.session.commit()
-        return redirect(url_for("show_post", post_id=post.id))
-
+    if request.method == 'POST' and edit_form.validate_on_submit():
+      find_post.title    = edit_form.title.data
+      find_post.subtitle = edit_form.subtitle.data
+      find_post.img_url  = edit_form.img_url.data
+      find_post.author   = edit_form.author.data
+      find_post.body     = edit_form.body.data
+      db.session.commit()
+      return redirect(url_for("show_post", post_id=find_post.id))
     return render_template("make-post.html", form=edit_form)
 
+
+
 @app.route("/delete/<int:post_id>")
-def delete_post(post_id):
-    post_to_delete = BlogPost.query.get(post_id)
-    db.session.delete(post_to_delete)
+def delete_post(post_id) :
+    findPost = BlogPost.query.get(post_id)
+    db.session.delete(findPost)
     db.session.commit()
     return redirect(url_for('get_all_posts'))
 
+# -----------------------------------------------------------------
+# ROUTES & FUNCTIONS - USERS
+# -----------------------------------------------------------------
+
+@app.route('/register', methods = ["GET", "POST"])
+def register() :
+  rform = RegisterForm()
+  if request.method == 'POST' and rform.validate_on_submit() :
+    count_user   = db.session.query(User).count()
+    new_user     = User(
+        id       = count_user + 1,
+        username = rform.username.data,
+        email    = rform.email.data,
+        password = hash_salt_passw(rform.passw.data)
+      )
+    if add_data_to_db(new_user) is not False : return redirect(url_for("get_all_posts"))
+  return render_template("register.html", form = rform)
+
+@app.route('/delete/<int:user_id>')
+def delete_user(user_id) :
+  findUser = User.query.get(user_id)
+  db.session.delete(findUser)
+
+@app.route('/login')
+def login() : return render_template("login.html")
+
+@app.route('/logout')
+def logout() : return redirect(url_for('get_all_posts'))
+
+# -----------------------------------------------------------------
+# HOST & PORT
+# -----------------------------------------------------------------
 if __name__ == "__main__":
     app.run(debug=True,host='0.0.0.0', port=5000)
+
+# adding post :
+# https://www.income.com.sg/blog/schizophrenia-in-singapore
+# https://www.income.com.sg/blog/school-holiday-activities
+# https://www.income.com.sg/blog/insurance-for-mental-illness

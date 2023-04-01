@@ -7,8 +7,8 @@
       <div class="row">
         <div class="col-lg-8 col-md-10 mx-auto">
           <div class="site-heading">
-            <h1>Angela's Blog</h1>
-            <span class="subheading">A collection of random musings.</span>
+            <h1>Blog Website</h1>
+            <span class="subheading">My Post Collections</span>
           </div>
         </div>
       </div>
@@ -16,7 +16,21 @@
   </header>
 
   <!-- Main Content -->
+  <div class="container">    
+    <div class="row">
+      <div class="col-lg-8 col-md-10 mx-auto">
+        {% for user in all_users %}
+          <p class="post-meta">User :
+            <a href="#">{{ user.id }} - {{ user.name }} - {{ user.email }} - {{ user.password }}</a>
+            <a href="{{url_for('delete_user', user_id=user.id) }}" style="color:red;">✘</a>
+          </p>
+        {% endfor %}
+      </div>
+    </div>  
+  </div>
+
   <div class="container">
+    
     <div class="row">
       <div class="col-lg-8 col-md-10 mx-auto">
         {% for post in all_posts %}
@@ -32,22 +46,20 @@
           <p class="post-meta">Posted by
             <a href="#">{{post.author}}</a>
             on {{post.date}}
-          
-            <a href="{{url_for('delete_post', post_id=post.id) }}">✘</a>
-          
+            <a href="{{url_for('delete_post', post_id=post.id) }}">✘</a>        
           </p>
         </div>
         <hr>
         {% endfor %}
 
-
         <!-- New Post -->
         <div class="clearfix">
           <a class="btn btn-primary float-right" href="{{url_for('add_new_post')}}">Create New Post</a>
         </div>
-      </div>
+      </div>  
     </div>
   </div>
+
   <hr>
 
 {% include "footer.html" %}
