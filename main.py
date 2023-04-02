@@ -1,3 +1,4 @@
+import os, pytz, datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, abort
 from flask_bootstrap import Bootstrap
 from flask_ckeditor import CKEditor
@@ -6,13 +7,13 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import exc
 from sqlalchemy.orm import relationship
 
-from forms import CreatePostForm, RegisterForm, LoginForm
-
+from controller.forms import CreatePostForm, RegisterForm, LoginForm
+# from forms import CreatePostForm, RegisterForm, LoginForm
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
 from functools import wraps
 from flask_gravatar import Gravatar
-import os, pytz, datetime
+
 
 # -----------------------------------------------------------------
 # APP CONFIG
@@ -37,8 +38,10 @@ def load_user(user_id):
 def admin_only(func) :
   @wraps(func)
   def check_is_admin(*args, **kwargs) :
-    if not current_user.is_authenticated or not (current_user.email.find('@admin.com') > 0) : return abort(403)
-    return func(*args, **kwargs)
+    return abort(403) if (
+      not current_user.is_authenticated and
+      not current_user.email.split('@')[1] == 'admin.com'
+    ) else func(*args, **kwargs)
   return check_is_admin
 
 # -----------------------------------------------------------------
@@ -49,7 +52,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 # -----------------------------------------------------------------
-# TABLE CONFIG
+# TABLE CONFIG - FUNCTIONS
 # -----------------------------------------------------------------
 
 def add_data_to_db(new_data) :
@@ -76,28 +79,38 @@ def get_datePost() :
   myZone     = pytz.timezone(timezone)
   date_post  = dt.now(myZone).strftime("%B %d, %Y")
   return date_post 
+
+# -----------------------------------------------------------------
+# TABLE CONFIG - SCHEMA
+# -----------------------------------------------------------------
+class User(UserMixin, db.Model) :
+  __tablename__ = "users"
+  user_id       = db.Column(db.Integer, primary_key=True)
+  username      = db.Column(db.String(250), nullable=False)
+  email         = db.Column(db.String(250), unique=True, nullable=False)
+  password      = db.Column(db.String, nullable=False)
+  #This will act like a List of BlogPost objects attached to each User. 
+  #The "author" refers to the author property in the BlogPost class.
+  posts = relationship("BlogPost", back_populates="author")
   
+  def __repr__(self) : return '<User {self.title}>'
+  def to_dict(self) : return {col.name : getattr(self, col.name) for col in self.__table__.columns}
+
 class BlogPost(db.Model):
   __tablename__ = "blog_posts"
-  id            = db.Column(db.Integer, primary_key=True)
-  author        = db.Column(db.String(250), nullable=False)
+  post_id       = db.Column(db.Integer, primary_key=True)
   title         = db.Column(db.String(250), unique=True, nullable=False)
   subtitle      = db.Column(db.String(250), nullable=False)
   date          = db.Column(db.String(250), nullable=False)
   body          = db.Column(db.Text, nullable=False)
   img_url       = db.Column(db.String(250), nullable=False)
   
-  def __repr__(self) : return '<BlogPost {self.title}>'
-  def to_dict(self) : return {col.name : getattr(self, col.name) for col in self.__table__.columns}
+  #Create Foreign Key, "users.id" the users refers to the tablename of User.
+  author_id   = db.Column(db.Integer, db.ForeignKey("users.id"))
+  #Create reference to the User object, the "posts" refers to the posts protperty in the User class.
+  author_name = relationship("User", back_populates="posts")
 
-class User(UserMixin, db.Model) :
-  __tablename__ = "users"
-  id            = db.Column(db.Integer, primary_key=True)
-  email         = db.Column(db.String(250), unique=True, nullable=False)
-  password      = db.Column(db.String, nullable=False)
-  username      = db.Column(db.String(250), nullable=False)
-  
-  def __repr__(self) : return '<User {self.title}>'
+  def __repr__(self) : return '<BlogPost {self.title}>'
   def to_dict(self) : return {col.name : getattr(self, col.name) for col in self.__table__.columns}
   
 with app.app_context() : db.create_all()
@@ -106,10 +119,10 @@ with app.app_context() : db.create_all()
 # ROUTES & FUNCTIONS - NO DB INVOLVED
 # -----------------------------------------------------------------
 @app.route("/about")
-def about(): return render_template("about.html", logged_in=current_user.is_authenticated)
+def about(): return render_template("about.html", current_user=current_user)
 
 @app.route("/contact")
-def contact(): return render_template("contact.html", logged_in=current_user.is_authenticated) 
+def contact(): return render_template("contact.html", current_user=current_user)
 
 # -----------------------------------------------------------------
 # ROUTES & FUNCTIONS - POSTS
@@ -118,24 +131,24 @@ def contact(): return render_template("contact.html", logged_in=current_user.is_
 def get_all_posts():
     posts = db.session.query(BlogPost).all()
     users = db.session.query(User).all()
-    return render_template("index.html", all_posts = posts, all_users = users, logged_in=current_user.is_authenticated)
+    return render_template("index.html", all_posts = posts, all_users = users, current_user=current_user)
 
 @app.route("/post/<int:post_id>")
 def show_post(post_id):
     requested_post = BlogPost.query.get(post_id)
-    return render_template("post.html", post=requested_post, logged_in=current_user.is_authenticated)
+    return render_template("post.html", post=requested_post, current_user=current_user)
 
 
 
 @app.route("/new-post", methods = ["GET", "POST"])
-@admin_only
+@login_required
 def add_new_post() :
     pform      = CreatePostForm()
     date_post  = get_datePost()
     if request.method == 'POST' and pform.validate_on_submit():
       count_post = db.session.query(BlogPost).count()
       new_post   = BlogPost(
-        id       = count_post + 1,
+        post_id  = count_post + 1,
         # Dont forget change to current_user
         author   = pform.author.data,
         title    = pform.title.data,
@@ -145,11 +158,13 @@ def add_new_post() :
         img_url  = pform.img_url.data,
       )
       if add_data_to_db(new_post) is not False : return redirect(url_for("get_all_posts"))
-    else : return render_template("make-post.html", form = pform, current_user = current_user)
+    else : 
+      pform.author.data = current_user.username
+      return render_template("make-post.html", form = pform, current_user=current_user)
 
 
 @app.route("/edit-post/<int:post_id>", methods=["GET", "POST"])
-@admin_only
+@login_required
 def edit_post(post_id) :
     find_post  = BlogPost.query.get(post_id)
     edit_form  = CreatePostForm(
@@ -167,12 +182,12 @@ def edit_post(post_id) :
       find_post.body     = edit_form.body.data
       db.session.commit()
       return redirect(url_for("show_post", post_id=find_post.id))
-    return render_template("make-post.html", form = edit_form, current_user = current_user)
+    return render_template("make-post.html", form = edit_form, current_user=current_user)
 
 
 
 @app.route("/delete-post/<int:post_id>")
-@admin_only
+@login_required
 def delete_post(post_id) :
     findPost = BlogPost.query.get(post_id)
     db.session.delete(findPost)
@@ -185,26 +200,28 @@ def delete_post(post_id) :
 
 @app.route('/register', methods = ["GET", "POST"])
 def register() :
-  rform = RegisterForm()
-  find_user = User.query.filter_by( email = rform.email.data ).first()
-  
-  if find_user : flash("Email already exist"); return redirect(url_for("login"))
-  elif request.method == 'POST' and rform.validate_on_submit() :
-    count_user   = db.session.query(User).count()
-    new_user     = User(
-      id         = count_user + 1,
-      username   = rform.username.data,
-      email      = rform.email.data,
-      password   = hash_salt_passw(rform.passw.data)
-    )
-    
-    if add_data_to_db(new_user) is False : 
-      flash("error : Register Failed"); return redirect(url_for("register"))
-    else : login_user(new_user); return redirect(url_for("get_all_posts"))
+  if   current_user.is_authenticated : return redirect(url_for("get_all_posts"))
+  else :
+    rform = RegisterForm()
+    find_user = User.query.filter_by( email = rform.email.data ).first()
+    if   find_user    : flash("Email already exist"); return redirect(url_for("login"))
+    elif request.method == 'POST' and rform.validate_on_submit() :
+      count_user   = db.session.query(User).count()
+      new_user     = User(
+        user_id    = count_user + 1,
+        username   = rform.username.data,
+        email      = rform.email.data,
+        password   = hash_salt_passw(rform.passw.data)
+      )
       
-  return render_template("register.html", form = rform, logged_in=current_user.is_authenticated)
+      if add_data_to_db(new_user) is False : 
+        flash("error : Register Failed"); return redirect(url_for("register"))
+      else : login_user(new_user); return redirect(url_for("get_all_posts"))
+      
+  return render_template("register.html", form = rform, current_user=current_user)
 
 @app.route('/delete-user/<int:user_id>')
+@admin_only
 def delete_user(user_id) :
   findUser = User.query.get(user_id)
   db.session.delete(findUser)
@@ -213,23 +230,21 @@ def delete_user(user_id) :
 
 @app.route('/login', methods=["GET", "POST"])
 def login() :
-  lform = LoginForm()
-  
-  if request.method == 'POST' and lform.validate_on_submit() :
-    mail  = lform.email.data
-    passw = lform.passw.data
-    
-    find_user = User.query.filter_by( email=mail ).first()
-    if not find_user : 
-      flash("Email does not exist"); return redirect(url_for("login"))
-    elif not check_password_hash(find_user.password, passw) : 
-      flash("Incorrect password"); return redirect(url_for("login"))
-    else : 
-      login_user(find_user); return redirect(url_for("get_all_posts"))
+  if   current_user.is_authenticated : return redirect(url_for("get_all_posts"))
+  else :    
+    lform = LoginForm()
+    if request.method == 'POST' and lform.validate_on_submit() :
+      mail  = lform.email.data
+      passw = lform.passw.data
       
-  elif current_user.is_authenticated : return redirect(url_for("get_all_posts"))
-    
-  else : return render_template("login.html", form = lform, logged_in=current_user.is_authenticated)
+      find_user = User.query.filter_by( email=mail ).first()
+      if not find_user : 
+        flash("Email does not exist"); return redirect(url_for("login"))
+      elif not check_password_hash(find_user.password, passw) : 
+        flash("Incorrect password"); return redirect(url_for("login"))
+      else : 
+        login_user(find_user); return redirect(url_for("get_all_posts"))
+    else : return render_template("login.html", form = lform, current_user=current_user)
 
 @app.route('/logout')
 def logout() : 
@@ -245,4 +260,3 @@ if __name__ == "__main__":
 # adding post :
 # https://www.income.com.sg/blog/schizophrenia-in-singapore
 # https://www.income.com.sg/blog/school-holiday-activities
-# https://www.income.com.sg/blog/insurance-for-mental-illness
