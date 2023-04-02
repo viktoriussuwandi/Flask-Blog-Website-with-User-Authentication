@@ -5,7 +5,7 @@ from flask_ckeditor import CKEditorField
 
 ##WTForm
 class CommentForm(FlaskForm) :
-  body     = CKEditorField("Blog Content",  validators=[DataRequired()] )
+  text     = CKEditorField("Comment",  validators=[DataRequired()] )
   submit   = SubmitField("Submitt")
   
 class CreatePostForm(FlaskForm) :

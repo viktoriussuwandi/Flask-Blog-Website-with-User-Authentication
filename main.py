@@ -7,7 +7,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import exc
 from sqlalchemy.orm import relationship
 
-from controller.forms import CreatePostForm, RegisterForm, LoginForm
+from controller.forms import CreatePostForm, RegisterForm, LoginForm, CommentForm
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
 from functools import wraps
@@ -30,15 +30,15 @@ login_manager.init_app(app)
 
 @login_manager.user_loader
 def load_user(user_id) :
-  find_user = User.query.get( int(user_id) )
-  return find_user
+  findUser = User.query.get( int(user_id) )
+  return findUser
 
 
 def admin_only(func) :
   @wraps(func)
   def check_is_admin(*args, **kwargs) :
     return abort(403) if (
-      not current_user.is_authenticated and
+      not current_user.is_authenticated or
       not current_user.email.split('@')[1] == 'admin.com'
     ) else func(*args, **kwargs)
   return check_is_admin
@@ -112,11 +112,11 @@ class BlogPost(db.Model):
 class Comment(db.Model):
   __tablename__  = "comments"
   id             = db.Column(db.Integer, primary_key=True)
+  text           = db.Column(db.Text, nullable=False)
   author_id      = db.Column(db.Integer, db.ForeignKey("users.id"))
   comment_author = relationship("User",  back_populates="comments")
   post_id        = db.Column(db.Integer, db.ForeignKey("blog_posts.id"))
   post           = relationship("BlogPost", back_populates="comments")
-  text           = db.Column(db.Text, nullable=False)
   def __repr__(self) : return '<BlogPost {self.title}>'
   def to_dict(self)  : return {col.name : getattr(self, col.name) for col in self.__table__.columns}
  
@@ -140,28 +140,40 @@ def get_all_posts():
   users = db.session.query(User).all()
   return render_template("index.html", all_posts = posts, all_users = users, current_user=current_user)
 
-@app.route("/post/<int:post_id>")
+@app.route("/post/<int:post_id>", methods = ["GET", "POST"])
 def show_post(post_id):
-    requested_post = BlogPost.query.get(post_id)
-    return render_template("post.html", post=requested_post, current_user=current_user)
+  cform = CommentForm()
+  findPost = BlogPost.query.get(post_id)
+  if request.method == 'POST' and cform.validate_on_submit() :
+    count_comment = db.session.query(Comment).count()
+    new_comment   = Comment(
+      id          = count_comment + 1,
+      text        = cform.text.data,
+      post        = findPost,
+      User        = current_user
+    )
+    add_data_to_db(new_comment)
+  return render_template("post.html", post=findPost, form=cform, current_user=current_user)
 
 
 
 @app.route("/add_post", methods = ["GET", "POST"])
 @login_required
 def add_new_post() :
+  if current_user.email.split('@')[1] == 'admin.com' : return redirect(url_for("get_all_posts"))
+  else :
     pform      = CreatePostForm()
     date_post  = get_datePost()
     if request.method == 'POST' and pform.validate_on_submit():
       count_post    = db.session.query(BlogPost).count()
       new_post      = BlogPost(
         id          = count_post + 1,
-        author      = current_user,
         title       = pform.title.data,
         subtitle    = pform.subtitle.data,
         date        = date_post,
         body        = pform.body.data,
         img_url     = pform.img_url.data,
+        author      = current_user
       )
       if add_data_to_db(new_post) is not False : return redirect(url_for("get_all_posts"))
     else : 
@@ -169,25 +181,30 @@ def add_new_post() :
       return render_template("make-post.html", form = pform, current_user=current_user)
 
 
+
 @app.route("/edit_post/<int:post_id>", methods=["GET", "POST"])
 @login_required
 def edit_post(post_id) :
-    find_post     = BlogPost.query.get(post_id)
+  findPost = BlogPost.query.get(post_id)
+  if not findPost.author == current_user or not current_user.email.split('@')[1] == 'admin.com' :
+    return redirect(url_for("get_all_posts"))
+  else :
     edit_form     = CreatePostForm(
-      title       = find_post.title,
-      subtitle    = find_post.subtitle,
-      img_url     = find_post.img_url,
-      author      = current_user,
-      body        = find_post.body
+      author      = findPost.author.username,
+      title       = findPost.title,
+      subtitle    = findPost.subtitle,
+      img_url     = findPost.img_url,
+      body        = findPost.body
     )
     if request.method == 'POST' and edit_form.validate_on_submit():
-      find_post.title       = edit_form.title.data
-      find_post.subtitle    = edit_form.subtitle.data
-      find_post.img_url     = edit_form.img_url.data
-      find_post.author_name = edit_form.author.data
-      find_post.body        = edit_form.body.data
+      findPost.title       = edit_form.title.data
+      findPost.subtitle    = edit_form.subtitle.data
+      findPost.img_url     = edit_form.img_url.data
+      findPost.body        = edit_form.body.data
+      findPost.author      = findPost.author
+      findPost.comments    = findPost.comments
       db.session.commit()
-      return redirect(url_for("show_post", post_id=find_post.id))
+      return redirect(url_for("show_post", post_id=findPost.id))
     return render_template("make-post.html", form = edit_form, is_edit=True, current_user=current_user)
 
 
@@ -195,7 +212,10 @@ def edit_post(post_id) :
 @app.route("/delete_post/<int:post_id>")
 @login_required
 def delete_post(post_id) :
-    findPost = BlogPost.query.get(post_id)
+  findPost = BlogPost.query.get(post_id)
+  if not findPost.author == current_user or not current_user.email.split('@')[1] == 'admin.com' :
+    return redirect(url_for("get_all_posts"))
+  else :
     db.session.delete(findPost)
     db.session.commit()
     return redirect(url_for('get_all_posts'))
@@ -209,8 +229,8 @@ def register() :
   if   current_user.is_authenticated : return redirect(url_for("get_all_posts"))
   else :
     rform = RegisterForm()
-    find_user = User.query.filter_by( email = rform.email.data ).first()
-    if   find_user    : flash("Email already exist"); return redirect(url_for("login"))
+    findUser = User.query.filter_by( email = rform.email.data ).first()
+    if   findUser    : flash("Email already exist"); return redirect(url_for("login"))
     elif request.method == 'POST' and rform.validate_on_submit() :
       count_user   = db.session.query(User).count()
       new_user     = User(
@@ -226,12 +246,41 @@ def register() :
       
   return render_template("register.html", form = rform, current_user=current_user)
 
+@app.route('/edit_user/<int:user_id>')
+@admin_only
+def edit_user(user_id) :
+  findUser    = BlogPost.query.get(user_id)
+  if not findUser == current_user or not current_user.email.split('@')[1] == 'admin.com' :
+    return redirect(url_for("get_all_posts"))
+  else :
+    edit_form           = RegisterForm(
+      username          = findUser.username,
+      email             = findUser.email,
+
+      
+      # FIND A WAY TO DECRIPT USER'S PASSWORD
+
+      
+      password          = findUser.password
+    )
+    if request.method == 'POST' and edit_form.validate_on_submit():
+      findUser.id       = findUser.id,
+      findUser.username = edit_form.username.data,
+      findUser.email    = edit_form.email.data,
+      findUser.password = hash_salt_passw(edit_form.passw.data)
+      db.session.commit()
+      return redirect(url_for("get_all_posts"))
+  return render_template("register.html", form = edit_form, current_user=findUser)
+
 @app.route('/delete_user/<int:user_id>')
 @admin_only
-def delete_user(user_id) :
+def delete_user(user_id) :  
   findUser = User.query.get(user_id)
-  db.session.delete(findUser)
-  db.session.commit()
+  if not findUser == current_user or not current_user.email.split('@')[1] == 'admin.com' :
+    return redirect(url_for("get_all_posts"))
+  else :
+    db.session.delete(findUser)
+    db.session.commit()
   return redirect(url_for("get_all_posts"))
 
 @app.route('/login', methods=["GET", "POST"])
@@ -243,19 +292,19 @@ def login() :
       mail  = lform.email.data
       passw = lform.passw.data
       
-      find_user = User.query.filter_by( email=mail ).first()
-      if not find_user :
+      findUser = User.query.filter_by( email=mail ).first()
+      if not findUser :
         flash("Email does not exist"); return redirect(url_for("login"))
-      elif not check_password_hash(find_user.password, passw) : 
+      elif not check_password_hash(findUser.password, passw) : 
         flash("Incorrect password"); return redirect(url_for("login"))
       else : 
-        login_user(find_user); return redirect(url_for("get_all_posts"))
+        login_user(findUser); return redirect(url_for("get_all_posts"))
     else : return render_template("login.html", form = lform, current_user=current_user)
 
 @app.route('/logout')
 def logout() : 
   if not current_user.is_authenticated : 
-    flash("Incorrect password"); return redirect(url_for("login"))
+    flash("Unrecognized User"); return redirect(url_for("login"))
   else : logout_user()
   return redirect(url_for('get_all_posts'))
 
