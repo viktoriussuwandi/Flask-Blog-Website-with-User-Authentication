@@ -1,5 +1,5 @@
 import os, pytz, datetime
-from flask import Flask, render_template, request, redirect, url_for, flash, abort
+from flask import Flask, render_template, request, redirect, url_for, flash, abort, jsonify
 from flask_bootstrap import Bootstrap
 from flask_ckeditor import CKEditor
 
@@ -8,7 +8,6 @@ from sqlalchemy import exc
 from sqlalchemy.orm import relationship
 
 from controller.forms import CreatePostForm, RegisterForm, LoginForm
-# from forms import CreatePostForm, RegisterForm, LoginForm
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
 from functools import wraps
@@ -30,8 +29,8 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 @login_manager.user_loader
-def load_user(user_id):
-  find_user = User.query.get(int(user_id))
+def load_user(user_id) :
+  find_user = User.query.get( int(user_id) )
   return find_user
 
 
@@ -58,8 +57,6 @@ db = SQLAlchemy(app)
 def add_data_to_db(new_data) :
   try :
     db.session.add(new_data)
-    #Log in and authenticate user after adding details to database.
-    # login_user(new_data)
     return db.session.commit()
   except exc.IntegrityError :
     db.session.rollback()
@@ -84,35 +81,45 @@ def get_datePost() :
 # TABLE CONFIG - SCHEMA
 # -----------------------------------------------------------------
 class User(UserMixin, db.Model) :
-  __tablename__ = "users"
-  user_id       = db.Column(db.Integer, primary_key=True)
-  username      = db.Column(db.String(250), nullable=False)
-  email         = db.Column(db.String(250), unique=True, nullable=False)
-  password      = db.Column(db.String, nullable=False)
+  __tablename__  = "users"
+  id             = db.Column(db.Integer, primary_key=True)
+  username       = db.Column(db.String(250), nullable=False)
+  email          = db.Column(db.String(250), unique=True, nullable=False)
+  password       = db.Column(db.String, nullable=False)
   #This will act like a List of BlogPost objects attached to each User. 
   #The "author" refers to the author property in the BlogPost class.
-  posts = relationship("BlogPost", back_populates="author")
-  
+  posts          = relationship("BlogPost", back_populates="author")
+  comments       = relationship("Comment", back_populates="comment_author")
   def __repr__(self) : return '<User {self.title}>'
-  def to_dict(self) : return {col.name : getattr(self, col.name) for col in self.__table__.columns}
+  def to_dict(self)  : return {col.name : getattr(self, col.name) for col in self.__table__.columns}
 
 class BlogPost(db.Model):
-  __tablename__ = "blog_posts"
-  post_id       = db.Column(db.Integer, primary_key=True)
-  title         = db.Column(db.String(250), unique=True, nullable=False)
-  subtitle      = db.Column(db.String(250), nullable=False)
-  date          = db.Column(db.String(250), nullable=False)
-  body          = db.Column(db.Text, nullable=False)
-  img_url       = db.Column(db.String(250), nullable=False)
-  
+  __tablename__  = "blog_posts"
+  id             = db.Column(db.Integer, primary_key=True)
+  title          = db.Column(db.String(250), unique=True, nullable=False)
+  subtitle       = db.Column(db.String(250), nullable=False)
+  date           = db.Column(db.String(250), nullable=False)
+  body           = db.Column(db.Text, nullable=False)
+  img_url        = db.Column(db.String(250), nullable=False)
   #Create Foreign Key, "users.id" the users refers to the tablename of User.
-  author_id   = db.Column(db.Integer, db.ForeignKey("users.id"))
+  author_id      = db.Column(db.Integer, db.ForeignKey("users.id"))
   #Create reference to the User object, the "posts" refers to the posts protperty in the User class.
-  author_name = relationship("User", back_populates="posts")
-
+  author         = relationship("User",    back_populates="posts")
+  comments       = relationship("Comment", back_populates="post")
   def __repr__(self) : return '<BlogPost {self.title}>'
-  def to_dict(self) : return {col.name : getattr(self, col.name) for col in self.__table__.columns}
-  
+  def to_dict(self)  : return {col.name : getattr(self, col.name) for col in self.__table__.columns}
+
+class Comment(db.Model):
+  __tablename__  = "comments"
+  id             = db.Column(db.Integer, primary_key=True)
+  author_id      = db.Column(db.Integer, db.ForeignKey("users.id"))
+  comment_author = relationship("User",  back_populates="comments")
+  post_id        = db.Column(db.Integer, db.ForeignKey("blog_posts.id"))
+  post           = relationship("BlogPost", back_populates="comments")
+  text           = db.Column(db.Text, nullable=False)
+  def __repr__(self) : return '<BlogPost {self.title}>'
+  def to_dict(self)  : return {col.name : getattr(self, col.name) for col in self.__table__.columns}
+ 
 with app.app_context() : db.create_all()
 
 # -----------------------------------------------------------------
@@ -129,9 +136,9 @@ def contact(): return render_template("contact.html", current_user=current_user)
 # -----------------------------------------------------------------
 @app.route('/')
 def get_all_posts():
-    posts = db.session.query(BlogPost).all()
-    users = db.session.query(User).all()
-    return render_template("index.html", all_posts = posts, all_users = users, current_user=current_user)
+  posts = db.session.query(BlogPost).all()
+  users = db.session.query(User).all()
+  return render_template("index.html", all_posts = posts, all_users = users, current_user=current_user)
 
 @app.route("/post/<int:post_id>")
 def show_post(post_id):
@@ -140,22 +147,21 @@ def show_post(post_id):
 
 
 
-@app.route("/new-post", methods = ["GET", "POST"])
+@app.route("/add_post", methods = ["GET", "POST"])
 @login_required
 def add_new_post() :
     pform      = CreatePostForm()
     date_post  = get_datePost()
     if request.method == 'POST' and pform.validate_on_submit():
-      count_post = db.session.query(BlogPost).count()
-      new_post   = BlogPost(
-        post_id  = count_post + 1,
-        # Dont forget change to current_user
-        author   = pform.author.data,
-        title    = pform.title.data,
-        subtitle = pform.subtitle.data,
-        date     = date_post,
-        body     = pform.body.data,
-        img_url  = pform.img_url.data,
+      count_post    = db.session.query(BlogPost).count()
+      new_post      = BlogPost(
+        id          = count_post + 1,
+        author      = current_user,
+        title       = pform.title.data,
+        subtitle    = pform.subtitle.data,
+        date        = date_post,
+        body        = pform.body.data,
+        img_url     = pform.img_url.data,
       )
       if add_data_to_db(new_post) is not False : return redirect(url_for("get_all_posts"))
     else : 
@@ -163,30 +169,30 @@ def add_new_post() :
       return render_template("make-post.html", form = pform, current_user=current_user)
 
 
-@app.route("/edit-post/<int:post_id>", methods=["GET", "POST"])
+@app.route("/edit_post/<int:post_id>", methods=["GET", "POST"])
 @login_required
 def edit_post(post_id) :
-    find_post  = BlogPost.query.get(post_id)
-    edit_form  = CreatePostForm(
-      title    = find_post.title,
-      subtitle = find_post.subtitle,
-      img_url  = find_post.img_url,
-      author   = find_post.author,
-      body     = find_post.body
+    find_post     = BlogPost.query.get(post_id)
+    edit_form     = CreatePostForm(
+      title       = find_post.title,
+      subtitle    = find_post.subtitle,
+      img_url     = find_post.img_url,
+      author      = current_user,
+      body        = find_post.body
     )
     if request.method == 'POST' and edit_form.validate_on_submit():
-      find_post.title    = edit_form.title.data
-      find_post.subtitle = edit_form.subtitle.data
-      find_post.img_url  = edit_form.img_url.data
-      find_post.author   = edit_form.author.data
-      find_post.body     = edit_form.body.data
+      find_post.title       = edit_form.title.data
+      find_post.subtitle    = edit_form.subtitle.data
+      find_post.img_url     = edit_form.img_url.data
+      find_post.author_name = edit_form.author.data
+      find_post.body        = edit_form.body.data
       db.session.commit()
       return redirect(url_for("show_post", post_id=find_post.id))
-    return render_template("make-post.html", form = edit_form, current_user=current_user)
+    return render_template("make-post.html", form = edit_form, is_edit=True, current_user=current_user)
 
 
 
-@app.route("/delete-post/<int:post_id>")
+@app.route("/delete_post/<int:post_id>")
 @login_required
 def delete_post(post_id) :
     findPost = BlogPost.query.get(post_id)
@@ -208,7 +214,7 @@ def register() :
     elif request.method == 'POST' and rform.validate_on_submit() :
       count_user   = db.session.query(User).count()
       new_user     = User(
-        user_id    = count_user + 1,
+        id         = count_user + 1,
         username   = rform.username.data,
         email      = rform.email.data,
         password   = hash_salt_passw(rform.passw.data)
@@ -220,7 +226,7 @@ def register() :
       
   return render_template("register.html", form = rform, current_user=current_user)
 
-@app.route('/delete-user/<int:user_id>')
+@app.route('/delete_user/<int:user_id>')
 @admin_only
 def delete_user(user_id) :
   findUser = User.query.get(user_id)
@@ -238,7 +244,7 @@ def login() :
       passw = lform.passw.data
       
       find_user = User.query.filter_by( email=mail ).first()
-      if not find_user : 
+      if not find_user :
         flash("Email does not exist"); return redirect(url_for("login"))
       elif not check_password_hash(find_user.password, passw) : 
         flash("Incorrect password"); return redirect(url_for("login"))
@@ -248,15 +254,16 @@ def login() :
 
 @app.route('/logout')
 def logout() : 
-  if current_user.is_authenticated : logout_user()
+  if not current_user.is_authenticated : 
+    flash("Incorrect password"); return redirect(url_for("login"))
+  else : logout_user()
   return redirect(url_for('get_all_posts'))
 
 # -----------------------------------------------------------------
 # HOST & PORT
 # -----------------------------------------------------------------
 if __name__ == "__main__":
-    app.run(debug=True,host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000)
 
 # adding post :
-# https://www.income.com.sg/blog/schizophrenia-in-singapore
 # https://www.income.com.sg/blog/school-holiday-activities

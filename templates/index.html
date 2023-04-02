@@ -17,14 +17,14 @@
 
   <!-- Main Content -->
   {% if current_user.is_authenticated and current_user.email.split('@')[1] == 'admin.com' %}
-  <div class="container">    
+  <div class="container">
     <div class="row">
       <div class="col-lg-8 col-md-10 mx-auto">
         {% for user in all_users %}
           <p class="post-meta">User :
-            <a href="#">{{ user.user_id }} - {{ user.username }} - {{ user.email }} - {{ user.password }}</a>
+            <a href="#">{{ user.id }} - {{ user.username }} - {{ user.email }} - {{ user.password }}</a>
             
-            <a class = "text-danger" href="{{url_for('delete_user', user_id=user.user_id) }}">✘</a>
+            <a class = "text-danger" href="{{url_for('delete_user', user_id=user.id) }}">✘</a>
           </p>
         {% endfor %}
       </div>
@@ -37,7 +37,7 @@
       <div class="col-lg-8 col-md-10 mx-auto">
         {% for post in all_posts %}
         <div class="post-preview">
-          <a href="{{ url_for('show_post', post_id=post.post_id) }}">
+          <a href="{{ url_for('show_post', post_id=post.id) }}">
             <h2 class="post-title">
               {{post.title}}
             </h2>
@@ -46,11 +46,15 @@
             </h3>
           </a>
           <p class="post-meta">Posted by
-            <a href="#">{{post.author_name}}</a>
+            <a href="#">{{post.author.username}}</a>
             on {{post.date}}
             
-            {% if current_user.is_authenticated %}
-            <a class = "text-danger" href="{{url_for('delete_post', post_id=post.post_id) }}">✘</a>
+            {% if current_user.is_authenticated and 
+                  ( post.author == current_user or 
+                    current_user.email.split('@')[1] == 'admin.com'
+                  )
+            %}
+            <a class = "text-danger" href="{{url_for('delete_post', post_id=post.id) }}">✘</a>
             {% endif %}
           </p>
           
