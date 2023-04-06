@@ -3,7 +3,7 @@ from App1.controller.forms  import CreatePostForm
 from App1.controller.models import BlogPost
 
 from flask import render_template, redirect, url_for
-from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
+# from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
 # from werkzeug.security import generate_password_hash, check_password_hash
 # from flask_gravatar import Gravatar
 from datetime import date

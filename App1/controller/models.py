@@ -1,4 +1,4 @@
-from App1 import app, db
+from App1 import db, app
 
 from sqlalchemy.orm import relationship
 from flask_login import UserMixin
@@ -8,6 +8,11 @@ from flask_login import UserMixin
 # ------------------------------------------------------------------
 # User
 # ------------------------------------------------------------------
+@app.login_manager.user_loader
+def load_user(user_id):
+  find_user = User.query.get(int(user_id))
+  return find_user
+  
 class User(UserMixin, db.Model) :
   __tablename__    = "users"
   id               = db.Column(db.Integer, primary_key=True, unique=True)
