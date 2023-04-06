@@ -19,7 +19,34 @@
   <div class="container">
     <div class="row">
       <div class="col-lg-8 col-md-10 mx-auto">
-        {% for post in all_posts %}
+        {% for user in all_users %}
+        <div class="post-preview">
+          <p>{{user.id}} - {{user.role}} => {{user.username}}</p>
+          <p>{{user.password.ori_password}}</p>
+          <p>{{user.password.encrypt_password}} </p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-md-10 mx-auto">
+        {% for comment in all_comments %}
+        <div class="post-preview">
+          <p>{{comment.id}}
+          <p>{{comment.text}}</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-md-10 mx-auto">
+        {% for post in all_posts %}    
         <div class="post-preview">
           <a href="{{ url_for('show_post', post_id=post.id) }}">
             <h2 class="post-title">
@@ -30,11 +57,8 @@
             </h3>
           </a>
           <p class="post-meta">Posted by
-            <a href="#">{{post.author}}</a>
-            on {{post.date}}
-          
+            <a href="#">{{post.author}}</a> on {{post.date}}
             <a href="{{url_for('delete_post', post_id=post.id) }}">✘</a>
-          
           </p>
         </div>
         <hr>

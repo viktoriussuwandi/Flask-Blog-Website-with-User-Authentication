@@ -1,3 +1,4 @@
+import os
 from flask            import Flask
 from flask_bootstrap  import Bootstrap
 from flask_ckeditor   import CKEditor
@@ -8,10 +9,10 @@ ckeditor = CKEditor(app)
 Bootstrap(app)
 
 ##CONNECT TO DB
-app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
+app.config['SECRET_KEY']                     = os.environ['form_token']
+app.config['SQLALCHEMY_DATABASE_URI']        = os.environ['db_name']
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 
-from App1.routes import routes_post, routes_user
+from App1.routes import crud_post,crud_user, no_crud

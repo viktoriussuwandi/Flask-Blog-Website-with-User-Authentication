@@ -8,9 +8,6 @@ from flask_login import UserMixin, login_user, LoginManager, login_required, cur
 # from flask_gravatar import Gravatar
 from datetime import date
 
-# -------------------------------------------------------------------
-# WITH CRUD on DB
-# -------------------------------------------------------------------
 @app.route("/post/<int:post_id>")
 def show_post(post_id):
     requested_post = BlogPost.query.get(post_id)
@@ -60,19 +57,3 @@ def delete_post(post_id):
     db.session.delete(post_to_delete)
     db.session.commit()
     return redirect(url_for('get_all_posts'))
-
-# -------------------------------------------------------------------
-# NO CRUD on DB
-# -------------------------------------------------------------------
-@app.route('/')
-def get_all_posts():
-    posts = BlogPost.query.all()
-    return render_template("index.html", all_posts=posts)
-
-@app.route("/about")
-def about():
-    return render_template("about.html")
-
-@app.route("/contact")
-def contact():
-    return render_template("contact.html")

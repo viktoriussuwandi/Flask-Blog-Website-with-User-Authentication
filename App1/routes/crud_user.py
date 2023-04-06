@@ -10,6 +10,7 @@ from flask import render_template, redirect, url_for
 @app.route('/register')
 def register():
   getForm = RegisterForm()
+  
   return render_template("register.html", form = getForm)
 
 
