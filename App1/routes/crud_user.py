@@ -14,7 +14,6 @@ def identify_role(mail) : return "admin" if mail.split("@")[1] == "admin.com" el
 def add_user() :
   regist_form = RegisterForm()
   form_valid  = regist_form.validate_on_submit()
-  # while do not registered
   if request.method == "POST" and form_valid :
     count_user = db.session.query(User).count()
     mail = regist_form.email.data; name = regist_form.username.data; passw = regist_form.password.data

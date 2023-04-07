@@ -8,8 +8,9 @@
 ## Technology and Features :
     * under development
 
-### Future Idea :
+### Features Future Idea :
     * User activation
+    * Forgot password
 
 ## Development
    under development
