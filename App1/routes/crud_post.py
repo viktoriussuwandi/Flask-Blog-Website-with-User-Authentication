@@ -1,10 +1,9 @@
 from App1 import app, db
-from App1.controller.forms  import CreatePostForm
+from App1.controller.forms  import Post_Add_Form
 from App1.controller.models import BlogPost
 
 from flask import render_template, redirect, url_for
 # from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
-# from werkzeug.security import generate_password_hash, check_password_hash
 # from flask_gravatar import Gravatar
 from datetime import date
 
@@ -15,7 +14,7 @@ def show_post(post_id):
 
 @app.route("/new-post")
 def add_new_post():
-    form = CreatePostForm()
+    form = Post_Add_Form()
     if form.validate_on_submit():
         new_post = BlogPost(
             title=form.title.data,
@@ -33,7 +32,7 @@ def add_new_post():
 @app.route("/edit-post/<int:post_id>")
 def edit_post(post_id):
     post = BlogPost.query.get(post_id)
-    edit_form = CreatePostForm(
+    edit_form = Post_Add_Form(
         title=post.title,
         subtitle=post.subtitle,
         img_url=post.img_url,

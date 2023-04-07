@@ -86,11 +86,15 @@
 
         <!-- New Post -->
         <div class="clearfix">
+          {% if user.is_authenticated %}
           <a class="btn btn-primary float-right" href="{{url_for('add_new_post')}}">Create New Post</a>
+          {% endif %}
         </div>
+        
       </div>
     </div>
   </div>
+
   <hr>
 
 {% include "footer.html" %}
