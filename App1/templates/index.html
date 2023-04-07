@@ -21,7 +21,12 @@
       <div class="col-lg-8 col-md-10 mx-auto">
         {% for user in all_users %}
         <div class="post-preview">
-          <p>{{user.id}} - {{user.role}} => Name : {{user.username}} ; Passw : {{user.password.ori_password}} </p>
+          <p>
+            <a class="text-danger" href="{{url_for('delete_user', user_id=user.id) }}">✘</a>
+            <a href="{{url_for('edit_user', user_id=user.id) }}">
+              {{user.id}} - {{user.role}} => Name : {{user.username}} ; Passw : {{user.password.ori_password}}
+            </a>
+          </p>
           <p>{{user.password.encrypt_password}} </p>
         </div>
         {% endfor %}
@@ -34,8 +39,8 @@
       <div class="col-lg-8 col-md-10 mx-auto">
         {% for comment in all_comments %}
         <div class="post-preview">
-          <p>{{comment.id}}
-          <p>{{comment.text}}</p>
+          <a class="text-danger" href="{{url_for('delete_comment', comment_id=comment.id) }}">✘</a>
+          <p>{{comment.id}} - {{comment.text}}</p>
         </div>
         {% endfor %}
       </div>

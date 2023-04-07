@@ -16,9 +16,7 @@ def get_all_posts():
                         )
 
 @app.route("/about")
-def about():
-    return render_template("about.html", user = current_user)
+def about(): return render_template("about.html", user = current_user)
 
 @app.route("/contact")
-def contact():
-    return render_template("contact.html", user = current_user)
+def contact(): return render_template("contact.html", user = current_user)

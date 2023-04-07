@@ -1,11 +1,13 @@
 import os, pytz, datetime
-from flask              import Flask
+
+from flask              import Flask, abort
 from flask_bootstrap    import Bootstrap
 from flask_ckeditor     import CKEditor
 from flask_sqlalchemy   import SQLAlchemy
 from werkzeug.security  import generate_password_hash, check_password_hash
-from flask_login        import LoginManager
+from flask_login        import LoginManager, current_user
 from sqlalchemy         import exc
+from functools          import wraps
 
 app = Flask(__name__)
 login_manager = LoginManager(app)
@@ -25,12 +27,10 @@ db = SQLAlchemy(app)
 # ------------------------------------------------------------------
 def add_Post_to_db(new_row) :
   try :
-    db.session.add(new_row)
-    return db.session.commit()
+    db.session.add(new_row); return db.session.commit()
   except exc.IntegrityError :
-    db.session.rollback()
-    return False
-    
+    db.session.rollback(); return False
+
 def get_datePost() :
   dt         = datetime.datetime
   # ip_address = request.remote_addr
@@ -47,6 +47,18 @@ def hash_salt_passw(passw) :
   return new_passw
 
 def check_password(db_passw, input_passw) : return check_password_hash(db_passw, input_passw)
+
+def user_only(funct) :
+  @wraps(funct)
+  def check_is_user(*args, **kwargs) : 
+    return abort(403) if not current_user.is_authenticated else funct(*args, **kwargs)
+  return check_is_user
+
+def admin_only(funct) :
+  @wraps(funct)
+  def check_is_admin(*args, **kwargs) : 
+    return abort(403) if current_user.email.split("@")[1] != "admin.com" else funct(*args, **kwargs)
+  return check_is_admin
   
 # ------------------------------------------------------------------
 # Continue
