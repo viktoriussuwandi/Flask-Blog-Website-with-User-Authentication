@@ -46,8 +46,7 @@ def hash_salt_passw(passw) :
     salt_length = int(os.environ['security_length']))
   return new_passw
 
-def check_password(db_passw, input_passw) : 
-  return check_password_hash(db_passw, input_passw)
+def check_password(db_passw, input_passw) : return check_password_hash(db_passw, input_passw)
   
 # ------------------------------------------------------------------
 # Continue

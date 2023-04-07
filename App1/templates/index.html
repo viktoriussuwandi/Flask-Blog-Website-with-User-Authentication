@@ -21,8 +21,7 @@
       <div class="col-lg-8 col-md-10 mx-auto">
         {% for user in all_users %}
         <div class="post-preview">
-          <p>{{user.id}} - {{user.role}} => {{user.username}}</p>
-          <p>{{user.password.ori_password}}</p>
+          <p>{{user.id}} - {{user.role}} => Name : {{user.username}} ; Passw : {{user.password.ori_password}} </p>
           <p>{{user.password.encrypt_password}} </p>
         </div>
         {% endfor %}
