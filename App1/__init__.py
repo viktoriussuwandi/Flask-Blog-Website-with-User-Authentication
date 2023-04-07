@@ -38,7 +38,8 @@ def get_datePost() :
   myZone     = pytz.timezone(timezone)
   date_post  = dt.now(myZone).strftime("%B %d, %Y")
   return date_post 
-    
+
+# ------------------------------------------------------------------
 def hash_salt_passw(passw) :
   new_passw = generate_password_hash(
     passw,
@@ -48,16 +49,19 @@ def hash_salt_passw(passw) :
 
 def check_password(db_passw, input_passw) : return check_password_hash(db_passw, input_passw)
 
+# ------------------------------------------------------------------
 def user_only(funct) :
   @wraps(funct)
   def check_is_user(*args, **kwargs) : 
-    return abort(403) if not current_user.is_authenticated else funct(*args, **kwargs)
+    return abort(403) if (not current_user.is_authenticated and 
+                          current_user.status == "active") else funct(*args, **kwargs)
   return check_is_user
 
 def admin_only(funct) :
   @wraps(funct)
   def check_is_admin(*args, **kwargs) : 
-    return abort(403) if current_user.email.split("@")[1] != "admin.com" else funct(*args, **kwargs)
+    return abort(403) if (not current_user.is_authenticated or
+                           current_user.email.split("@")[1] != "admin.com") else funct(*args, **kwargs)
   return check_is_admin
   
 # ------------------------------------------------------------------

@@ -8,5 +8,8 @@
 ## Technology and Features :
     * under development
 
+### Future Idea :
+    * User activation
+
 ## Development
    under development

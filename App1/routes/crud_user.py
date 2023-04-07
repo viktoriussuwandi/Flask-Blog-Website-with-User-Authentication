@@ -19,12 +19,14 @@ def add_user() :
     count_user = db.session.query(User).count()
     mail = regist_form.email.data; name = regist_form.username.data; passw = regist_form.password.data
     find_user  = User.query.filter_by(email=mail).first()
-    if find_user : flash("error : Email already exist"); return redirect(url_for('add_user'))
+    if find_user : 
+      find_user.status = "active"; db.session.commit()
+      flash("error : Email already exist"); return redirect(url_for('login'))
     else :
       new_passw = Password( id = count_user + 1, ori_password = passw, encrypt_password = hash_salt_passw(passw))
       new_user  = User( id = count_user + 1, email = mail, username = name, password = new_passw, role=identify_role(mail) )
       check_add_new_db = add_Post_to_db(new_passw) is not False and add_Post_to_db(new_user) is not False
-      if check_add_new_db == True : login_user(new_user); return redirect(url_for('get_all_posts'))
+      if check_add_new_db == True :  flash("error : Register successful"); login_user(new_user); return redirect(url_for('get_all_posts'))
       else : flash("error : Register unsuccessful"); return redirect(url_for('add_user'))
   return render_template("register.html", form = regist_form, user = current_user)
 
@@ -41,9 +43,11 @@ def edit_user(user_id) :
 @app.route('/account_close/<int:user_id>', methods = ["GET", "POST"] )
 @admin_only
 def delete_user(user_id) :
-  find_user = User.query.get( int(user_id) ); db.session.delete(find_user); db.session.commit()
+  find_user = User.query.get( int(user_id) );
+  find_user.status = "inactive"; db.session.commit()
+  if current_user.id == int(user_id) : logout_user(); redirect(url_for('login'))
   return redirect(url_for('get_all_posts'))
-  
+
 # -------------------------------------------------------------------
 @app.route('/login', methods = ["GET", "POST"])
 def login() :
@@ -53,8 +57,10 @@ def login() :
     mail       = login_form.email.data; passw = login_form.password.data
     find_user  = User.query.filter_by(email=mail).first()
     if not find_user : flash("error : Email is not exist"); return redirect(url_for('add_user'))
+    elif find_user.status == "inactive" : 
+      find_user.status == "active"; db.session.commit(); return redirect(url_for('get_all_posts'))
     elif check_password(
-      db_passw = find_user.password.encrypt_password, 
+      db_passw    = find_user.password.encrypt_password, 
       input_passw = passw 
     ) : login_user(find_user); return redirect(url_for('get_all_posts'))
     else : flash("error : Incorrect email or password"); return redirect(url_for('login'))

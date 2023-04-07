@@ -19,6 +19,7 @@ class User(UserMixin, db.Model) :
   username         = db.Column(db.String(250), nullable=False)
   email            = db.Column(db.String(250), unique=True, nullable=False)
   role             = db.Column(db.String(50), nullable=False, default="user")
+  status           = db.Column(db.String(50), nullable=False, default="active")
 
   # one to one relationship
   password_id      = db.Column(db.Integer, db.ForeignKey("passwords.id"))
