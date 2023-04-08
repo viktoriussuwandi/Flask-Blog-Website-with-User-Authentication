@@ -30,7 +30,7 @@ class User_Edit_Form_As_Admin(FlaskForm) :
   email    = StringField("Email", validators=[DataRequired(), Email()])
   password = StringField("Password", validators=[DataRequired()])
   role     = SelectField("Role",   choices = [('user','user'),('admin','admin')] )
-  status   = SelectField("Status", choices = [('Active','Active'),('Inactive','Inactive')] )
+  status   = SelectField("Status", choices = [('active','active'),('inactive','inactive')] )
   submit   = SubmitField("Update")
 
 class User_Edit_Form_As_User(FlaskForm) :

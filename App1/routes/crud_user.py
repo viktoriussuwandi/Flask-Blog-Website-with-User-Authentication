@@ -1,29 +1,27 @@
-from App1 import app, db, add_Post_to_db, hash_salt_passw, check_password, user_only, admin_only
+from App1 import app, db, add_data_to_db, hash_salt_passw, check_password, admin_only
 from App1.controller.forms  import User_Login_Form, User_Add_Form, User_Edit_Form_As_Admin, User_Edit_Form_As_User
 from App1.controller.models import User, Password
 
-from flask import render_template, redirect, url_for, request, flash, abort, jsonify
-from flask_login import login_user, current_user, logout_user
+from flask import render_template, redirect, url_for, request, flash, abort
+from flask_login import login_user, login_required, current_user, logout_user
 
 # -------------------------------------------------------------------
 def identify_role(mail) : return "admin" if mail.split("@")[1] == "admin.com" else "user"
 
 def identify_edit_form(find_user) :
-  is_admin          =  current_user.role == "admin"
-  is_authorize_user = (current_user.role == "user" and current_user.status == "active" and current_user.id == find_user.id)
-  if is_admin :
-    return User_Edit_Form_As_Admin(
-      username = find_user.username, email = find_user.email,
-      password = find_user.password.ori_password,
-      role = find_user.role, status = find_user.status)
+  is_authorize_admin = (current_user.role == "admin" and current_user.status == "active" and find_user.role == "user") or (
+                        current_user.role == "admin" and current_user.status == "active" and current_user.id == find_user.id)
+  is_authorize_user  = (current_user.role == "user"  and current_user.status == "active" and current_user.id == find_user.id)
+  if is_authorize_admin :
+    return User_Edit_Form_As_Admin( username = find_user.username, email = find_user.email,
+                                    password = find_user.password.ori_password, role = find_user.role, status = find_user.status)
   elif is_authorize_user :
-    return User_Edit_Form_As_User(
-      username = find_user.username, email = find_user.email,
-      password = find_user.password.ori_password )
-  else : return abort(403)
+    return User_Edit_Form_As_User( username = find_user.username, email = find_user.email, 
+                                   password = find_user.password.ori_password )
+  else : return abort(401)
 
 def update_userInfo(find_user, form) :
-  if current_user.role == "admin" : find_user.role = form.role; find_user.status = form.status
+  if current_user.role == "admin" : find_user.role = form.role.data; find_user.status = form.status.data
   find_user.username = form.username.data
   find_user.email    = form.email.data
   find_user.password.ori_password = form.password.data
@@ -35,7 +33,7 @@ def update_userInfo(find_user, form) :
 
 @app.route('/login', methods = ["GET", "POST"])
 def sign_in() :
-  if current_user.is_authenticated : return redirect(url_for('get_all_posts'))
+  if current_user.is_authenticated : flash("User already login", "danger"); return redirect(url_for('get_all_posts'))
   login_form = User_Login_Form()
   form_valid = login_form.validate_on_submit()
   if request.method == "POST" and form_valid :
@@ -55,7 +53,7 @@ def sign_in() :
 
 @app.route('/register', methods = ["GET", "POST"] )
 def add_user() :
-  if current_user.is_authenticated : return redirect(url_for('get_all_posts'))
+  if current_user.is_authenticated : flash("User already login", "danger"); return redirect(url_for('get_all_posts'))
     
   add_form = User_Add_Form()
   form_valid  = add_form.validate_on_submit()
@@ -68,7 +66,7 @@ def add_user() :
     else :
       new_passw = Password( id = count_user + 1, ori_password = passw, encrypt_password = hash_salt_passw(passw))
       new_user  = User( id = count_user + 1, email = mail, username = name, password = new_passw, role=identify_role(mail) )
-      check_add_new_db = add_Post_to_db(new_passw) is not False and add_Post_to_db(new_user) is not False
+      check_add_new_db = add_data_to_db(new_passw) is not False and add_data_to_db(new_user) is not False
       if check_add_new_db == True :  flash("Register successful", "success"); login_user(new_user); return redirect(url_for('get_all_posts'))
       else : flash(" Register unsuccessful", "danger"); return redirect(url_for('add_user'))
   return render_template("register.html", form = add_form, user = current_user)
@@ -76,17 +74,17 @@ def add_user() :
 # -------------------------------------------------------------------
 
 @app.route('/account_setting/<int:user_id>', methods = ["GET", "POST"] )
-@user_only
+@login_required
 def edit_user(user_id) :
-  find_user = User.query.get( int(user_id) ); edit_form = identify_edit_form(find_user)
-  if request.method == "POST" and edit_form.validate_on_submit() :
+  find_user = User.query.get( int(user_id) ); edit_form = identify_edit_form(find_user); form_valid = edit_form.validate_on_submit()
+  if request.method == "POST" and form_valid :
     # Check other user with same email
     other_user = User.query.filter_by(email=edit_form.email.data).first()
     check_duplicate = (other_user.id != find_user.id and other_user.email == edit_form.email.data)
     
     if check_duplicate : flash("email already taken", "danger"); return redirect(url_for('edit_user', user_id = current_user.id))
-    elif update_userInfo(find_user, edit_form) == True : flash("update profile successful", "success"); return redirect(url_for('get_all_posts'))
-    else : flash("update profile unsuccessful", "danger");
+    elif update_userInfo(find_user, edit_form) : flash("update profile successful", "success"); return redirect(url_for('get_all_posts'))
+    else : flash("update profile unsuccessful", "danger")
   return render_template("register.html", form = edit_form, user = current_user)
 
 # -------------------------------------------------------------------

@@ -52,7 +52,7 @@ class Comment(db.Model) :
   __tablename__    = "comments"
   id               = db.Column(db.Integer, primary_key=True, unique=True)
   text             = db.Column(db.String(250), nullable=False)  
-  
+  status           = db.Column(db.String(50), nullable=False, default="active")
 # one to many relationship
   user_id          = db.Column(db.Integer, db.ForeignKey("users.id"))
   user             = relationship("User", back_populates="comments")
@@ -72,6 +72,7 @@ class BlogPost(db.Model) :
   date             = db.Column(db.String(250), nullable=False)
   body             = db.Column(db.Text, nullable=False)
   img_url          = db.Column(db.String(250), nullable=False)
+  status           = db.Column(db.String(50), nullable=False, default="active")
 
   # one to many relationship
   user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
