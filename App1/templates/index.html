@@ -20,13 +20,17 @@
   <div class="container">
     <div class="row">
       <div class="col-lg-8 col-md-10 mx-auto content">
-        {% with messages = get_flashed_messages() %}
-          {% if messages %}
-            {% for message in messages %}
-              <p class="alert alert-danger">{{ message }}</p>  
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
+        {% if messages %}
+          {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible" role="alert">
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            {{ message }}
+          </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
       </div>
     </div>
   </div>
@@ -38,8 +42,11 @@
         <div class="post-preview">
           <p>
             <a class="text-danger" href="{{url_for('delete_user', user_id=user.id) }}">✘</a>
-            <a href="{{url_for('edit_user', user_id=user.id) }}">
-              {{user.status}} - {{user.id}} - {{user.role}} => Name : {{user.username}} ; Passw : {{user.password.ori_password}}
+            <a href="{{url_for('edit_user', user_id = user.id) }}">
+              ID : {{user.id}} ; Role : {{user.role}} ; 
+              Status : {{user.status}} ; 
+              Name : {{user.username}} ; 
+              Password : {{user.password.ori_password}}
             </a>
           </p>
           <p>{{user.password.encrypt_password}} </p>

@@ -53,15 +53,15 @@ def check_password(db_passw, input_passw) : return check_password_hash(db_passw,
 def user_only(funct) :
   @wraps(funct)
   def check_is_user(*args, **kwargs) :
-    checkings = (not current_user.is_authenticated and current_user.status == "active")
-    return abort(403) if checkings else funct(*args, **kwargs)
+    checkings = (current_user.is_authenticated and current_user.status == "active")
+    return abort(403) if not checkings else funct(*args, **kwargs)
   return check_is_user
 
 def admin_only(funct) :
   @wraps(funct)
   def check_is_admin(*args, **kwargs) : 
-    checkings = (not current_user.is_authenticated or current_user.email.split("@")[1] != "admin.com") 
-    return abort(403) if checkings else funct(*args, **kwargs)
+    checkings = (current_user.is_authenticated and current_user.email.split("@")[1] == "admin.com") 
+    return abort(403) if not checkings else funct(*args, **kwargs)
   return check_is_admin
   
 # ------------------------------------------------------------------

@@ -23,7 +23,7 @@ class User_Add_Form(FlaskForm) :
   username = StringField("Username", validators=[DataRequired()])
   email    = StringField("Email", validators=[DataRequired(), Email()])
   password = PasswordField("Password", validators=[DataRequired()])
-  submit   = SubmitField("Login")
+  submit   = SubmitField("Register")
 
 class User_Edit_Form_As_Admin(FlaskForm) :
   username = StringField("Username", validators=[DataRequired()])
