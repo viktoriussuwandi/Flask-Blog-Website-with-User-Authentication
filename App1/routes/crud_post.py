@@ -26,8 +26,8 @@ def show_post(post_id):
 @app.route("/create_post", methods = ["GET", "POST"])
 @user_only
 def add_post() :
-  add_form = Post_Add_Form()
-  if request.method == "POST" and add_form.validate_on_submit() :
+  add_form   = Post_Add_Form(); form_valid = add_form.validate_on_submit()
+  if request.method == "POST" and form_valid :
       new_post     = BlogPost(
           title    = add_form.title.data,
           subtitle = add_form.subtitle.data,
@@ -37,11 +37,9 @@ def add_post() :
           date     = date.today().strftime("%B %d, %Y")
       )
       if add_data_to_db(new_post) is not False : 
-        flash("Article successfully posted", "success")
-        return redirect( url_for('get_all_posts') )
+        flash("Article successfully posted", "success"); return redirect( url_for('get_all_posts') )
       else : 
-        flash(" Posted unsuccessful", "danger")
-        return redirect( url_for('add_post') )
+        flash(" Posted unsuccessful", "danger"); return redirect( url_for('add_post') )
   return render_template("make-post.html", form = add_form, user = current_user )
 
 @app.route("/update_post/<int:post_id>")
