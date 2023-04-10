@@ -6,7 +6,6 @@ from flask_ckeditor     import CKEditor
 from flask_sqlalchemy   import SQLAlchemy
 from werkzeug.security  import generate_password_hash, check_password_hash
 from flask_login        import LoginManager, current_user
-from sqlalchemy         import exc
 from functools          import wraps
 
 app = Flask(__name__)
@@ -29,7 +28,7 @@ db = SQLAlchemy(app)
 def add_data_to_db(new_row) :
   try :
     db.session.add(new_row); return db.session.commit()
-  except exc.IntegrityError :
+  except Exception :
     db.session.rollback(); return False
 
 def get_datePost() :
@@ -51,13 +50,26 @@ def hash_salt_passw(passw) :
 def check_password(db_passw, input_passw) : return check_password_hash(db_passw, input_passw)
 
 # ------------------------------------------------------------------
+def user_only(funct) :
+  @wraps(funct)
+  def check_is_user(*args, **kwargs) :
+    print(args)
+    checkings = (
+      current_user.is_authenticated   and
+      current_user.status == "active" and
+      current_user.role   == "user")
+    return abort(401) if not checkings else funct(*args, **kwargs)
+  return check_is_user
 
 def admin_only(funct) :
   @wraps(funct)
   def check_is_admin(*args, **kwargs) :
-    checkings = (current_user.is_authenticated   and 
-                 current_user.status == "active" and 
-                 current_user.email.split("@")[1] == "admin.com") 
+    print(args)
+    checkings = (
+      current_user.is_authenticated   and
+      current_user.status == "active" and
+      current_user.role   == "admin"  and
+      current_user.email.split("@")[1] == "admin.com") 
     return abort(401) if not checkings else funct(*args, **kwargs)
   return check_is_admin
   

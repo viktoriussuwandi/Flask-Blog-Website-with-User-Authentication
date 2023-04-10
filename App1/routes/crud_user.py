@@ -6,6 +6,8 @@ from flask import render_template, redirect, url_for, request, flash, abort
 from flask_login import login_user, login_required, current_user, logout_user
 
 # -------------------------------------------------------------------
+# ADDITIONAL
+# -------------------------------------------------------------------
 def identify_role(mail) : return "admin" if mail.split("@")[1] == "admin.com" else "user"
 
 def identify_edit_form(find_user) :
@@ -30,7 +32,8 @@ def update_userInfo(find_user, form) :
   except Exception : db.session.rollback(); return False
 
 # -------------------------------------------------------------------
-
+# ROUTES
+# -------------------------------------------------------------------
 @app.route('/login', methods = ["GET", "POST"])
 def sign_in() :
   if current_user.is_authenticated : flash("User already login", "danger"); return redirect(url_for('get_all_posts'))

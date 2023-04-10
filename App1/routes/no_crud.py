@@ -1,4 +1,4 @@
-from App1 import app
+from App1 import app, admin_only
 from App1.controller.models import BlogPost, User, Comment
 from flask import render_template
 from flask_login import current_user
