@@ -96,7 +96,7 @@ def edit_user(user_id) :
 @admin_only
 def delete_user(user_id) :
   find_user = User.query.get( int(user_id) );
-  find_user.status = "inactive"; db.session.commit()
+  find_user : find_user.status = "inactive"; db.session.commit()
   if current_user.id == int(user_id) : logout_user(); return redirect(url_for('sign_in'))
   return redirect(url_for('get_all_posts'))
 

@@ -28,19 +28,21 @@ def show_post(post_id):
 def add_post() :
   add_form   = Post_Add_Form(); form_valid = add_form.validate_on_submit()
   if request.method == "POST" and form_valid :
-      new_post     = BlogPost(
-          title    = add_form.title.data,
-          subtitle = add_form.subtitle.data,
-          body     = add_form.body.data,
-          img_url  = add_form.img_url.data,
-          author   = current_user,
-          date     = date.today().strftime("%B %d, %Y")
-      )
-      if add_data_to_db(new_post) is not False : 
-        flash("Article successfully posted", "success"); return redirect( url_for('get_all_posts') )
-      else : 
-        flash(" Posted unsuccessful", "danger"); return redirect( url_for('add_post') )
-  return render_template("make-post.html", form = add_form, user = current_user )
+    count_post = db.session.query(BlogPost).count()
+    new_post   = BlogPost(
+      id       = count_post + 1,
+      title    = add_form.title.data,
+      subtitle = add_form.subtitle.data,
+      body     = add_form.body.data,
+      img_url  = add_form.img_url.data,
+      author   = current_user,
+      date     = date.today().strftime("%B %d, %Y")
+    )
+    if add_data_to_db(new_post) is not False : 
+      flash("Article successfully posted", "success"); return redirect( url_for('get_all_posts') )
+    else : 
+      flash(" Posted unsuccessful", "danger"); return redirect( url_for('add_post') )
+  return render_template("make-post.html", form = add_form, user = current_user, is_edit = False )
 
 @app.route("/update_post/<int:post_id>")
 def edit_post(post_id) :
@@ -48,7 +50,7 @@ def edit_post(post_id) :
   if not is_authorized(post) : return abort(401)
   else :
     edit_form  = Post_Add_Form(
-      title    = post.title, 
+      title    = post.title,
       subtitle = post.subtitle,
       img_url  = post.img_url,
       author   = post.author,
@@ -65,9 +67,7 @@ def edit_post(post_id) :
   return render_template("make-post.html", form=edit_form, user = current_user)
 
 @app.route("/close_post/<int:post_id>")
-@admin_only
 def delete_post(post_id) :
-    post_to_delete = BlogPost.query.get(post_id)
-    db.session.delete(post_to_delete)
-    db.session.commit()
-    return redirect(url_for('get_all_posts'))
+  find_post = BlogPost.query.get( int(post_id) );
+  if find_post : find_post.status = "inactive"; db.session.commit()
+  return redirect(url_for('get_all_posts'))

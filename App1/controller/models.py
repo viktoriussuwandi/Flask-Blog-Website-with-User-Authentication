@@ -1,5 +1,4 @@
 from App1 import db, app
-
 from sqlalchemy.orm import relationship
 from flask_login    import UserMixin
 
@@ -23,7 +22,7 @@ class User(UserMixin, db.Model) :
 
   # one to one relationship - (User as parrent Password as child)
   password_id      = db.Column(db.Integer, db.ForeignKey("passwords.id"))
-  password         = relationship("Password", backref=db.backref("users", uselist=False)) 
+  password         = relationship("Password", backref=db.backref("users", uselist=False))
 
   # one to many relationship - (User as parrent BlogPost as child)
   posts            = relationship("BlogPost", back_populates="author")
@@ -62,7 +61,7 @@ class BlogPost(UserMixin,db.Model) :
   # one to many relationship - (User as parrent BlogPost as child)
   author_id = db.Column(db.Integer, db.ForeignKey("users.id"))
   author    = relationship("User", back_populates="posts")
-
+  
   # one to many relationship - (BlogPost as parrent Comment as child)
   comments   = relationship("Comment", back_populates="posts")
 
