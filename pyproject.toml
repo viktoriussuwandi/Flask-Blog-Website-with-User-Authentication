@@ -16,6 +16,7 @@ Flask-SQLAlchemy = "^3.0.3"
 Flask-WTF = "^1.1.1"
 WTForms = "^3.0.1"
 Flask-Login = "^0.6.2"
+fastapi = "^0.95.0"
 
 [tool.poetry.dev-dependencies]
 debugpy = "^1.6.2"

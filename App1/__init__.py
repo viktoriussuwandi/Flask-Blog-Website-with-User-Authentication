@@ -20,8 +20,6 @@ app.config['SQLALCHEMY_DATABASE_URI']        = os.environ['db_name']
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-
-
 # ------------------------------------------------------------------
 # Additional Functions
 # ------------------------------------------------------------------
@@ -50,6 +48,7 @@ def hash_salt_passw(passw) :
 def check_password(db_passw, input_passw) : return check_password_hash(db_passw, input_passw)
 
 # ------------------------------------------------------------------
+  
 def user_only(funct) :
   @wraps(funct)
   def check_is_user(*args, **kwargs) :
