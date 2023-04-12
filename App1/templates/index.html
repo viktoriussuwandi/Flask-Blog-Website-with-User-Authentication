@@ -75,8 +75,8 @@
         <p class="post-meta"> 
           <p>ID : {{ post.id }} - Status : {{ post.status }}</p>
           Posted by
-          <a href="{{ url_for('edit_post', post_id = post.id) }}">{{ post.author.username }} </a> 
-            on {{ post.date }}
+          <a href="#">{{ post.author.username }}</a> on
+          <a href="#">{{ post.date }}</a>
           <a href="{{url_for('delete_post', post_id = post.id) }}">✘</a>
         </p>
         <div class="post-preview">

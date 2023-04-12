@@ -23,11 +23,14 @@ def identify_edit_form(find_user) :
   else : return abort(401)
 
 def update_userInfo(find_user, form) :
-  if current_user.role == "admin" : find_user.role = form.role.data; find_user.status = form.status.data
-  find_user.username = form.username.data
-  find_user.email    = form.email.data
-  find_user.password.ori_password = form.password.data
-  find_user.password.encrypt_password = hash_salt_passw(form.password.data)
+  if find_user.role == "admin" :
+    find_user.role     = form.role.data
+    find_user.status   = form.status.data
+  else :
+    find_user.username = form.username.data
+    find_user.email    = form.email.data
+    find_user.password.ori_password = form.password.data
+    find_user.password.encrypt_password = hash_salt_passw(form.password.data)
   try : db.session.commit(); return True
   except Exception : db.session.rollback(); return False
 
@@ -49,7 +52,7 @@ def sign_in() :
     elif check_password(db_passw    = find_user.password.encrypt_password, input_passw = passw ) : 
       flash("Login Success", "success"); login_user(find_user)
       return redirect(url_for('get_all_posts'))
-    else : flash("Incorrect email or password", "error"); return redirect(url_for('sign_in'))
+    else : flash("Incorrect email or password", "danger"); return redirect(url_for('sign_in'))
   return render_template("login.html", form = login_form, user = current_user)
 
 # -------------------------------------------------------------------
@@ -79,15 +82,20 @@ def add_user() :
 @app.route('/account_setting/<int:user_id>', methods = ["GET", "POST"] )
 @login_required
 def edit_user(user_id) :
-  find_user = User.query.get( int(user_id) ); edit_form = identify_edit_form(find_user); form_valid = edit_form.validate_on_submit()
+  find_user = User.query.get( int(user_id) )
+  edit_form = identify_edit_form(find_user); form_valid = edit_form.validate_on_submit()
   if request.method == "POST" and form_valid :
-    # Check other user with same email
-    other_user = User.query.filter_by(email=edit_form.email.data).first()
-    check_duplicate = (other_user.id != find_user.id and other_user.email == edit_form.email.data)
-    
-    if check_duplicate : flash("email already taken", "danger"); return redirect(url_for('edit_user', user_id = current_user.id))
-    elif update_userInfo(find_user, edit_form) : flash("update profile successful", "success"); return redirect(url_for('get_all_posts'))
-    else : flash("update profile unsuccessful", "danger")
+    # Check Duplicate email
+    other_user       = User.query.filter_by(email=edit_form.email.data).first()
+    is_duplicate  = (other_user.id != find_user.id and other_user.email == edit_form.email.data)
+    is_authorized = current_user.role == "admin" or (current_user.id == find_user.id and current_user.email == find_user.email)
+    if is_duplicate : 
+      flash("email already taken", "danger"); return redirect(url_for('edit_user', user_id = current_user.id))
+    elif not is_authorized : return abort(401)
+    elif not update_userInfo(find_user, edit_form) :
+      flash("update profile unsuccessful", "danger"); return redirect(url_for('edit_user', user_id = current_user.id))
+    else : 
+      flash("update profile successful", "success"); return redirect(url_for('get_all_posts'))
   return render_template("register.html", form = edit_form, user = current_user)
 
 # -------------------------------------------------------------------

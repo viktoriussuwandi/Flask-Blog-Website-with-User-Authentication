@@ -1,8 +1,8 @@
 from flask_wtf import FlaskForm
 from flask_ckeditor import CKEditorField
 
-from wtforms import StringField, SubmitField,PasswordField, SelectField, DateField
-from wtforms.validators import DataRequired, URL, Email, Optional
+from wtforms import StringField, SubmitField,PasswordField, SelectField
+from wtforms.validators import DataRequired, URL, Email
 
 ##WTForm
 # ---------------------------------------------------------------------------------
@@ -12,15 +12,6 @@ class Post_Add_Form(FlaskForm):
   img_url  = StringField("Blog Image URL", validators=[DataRequired(), URL()])
   body     = CKEditorField("Blog Content", validators=[DataRequired()])
   submit   = SubmitField("Post article")
-
-class Post_Edit_Form(FlaskForm):
-  status   = SelectField("Status", choices = [('active','active'),('inactive','inactive')] )
-  date     = DateField("Created on", validators=[Optional()])
-  title    = StringField("Blog Post Title", validators=[DataRequired()])
-  subtitle = StringField("Subtitle", validators=[DataRequired()])
-  img_url  = StringField("Blog Image URL", validators=[DataRequired(), URL()])
-  body     = CKEditorField("Blog Content", validators=[DataRequired()])
-  submit   = SubmitField("Update article")
 
 # ---------------------------------------------------------------------------------
 class User_Login_Form(FlaskForm) :

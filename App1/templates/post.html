@@ -7,11 +7,13 @@
       <div class="row">
         <div class="col-lg-8 col-md-10 mx-auto">
           <div class="post-heading">
-            <h1>{{post.id} - {{post.title}}</h1>
+            <h1>{{post.id}} - {{post.title}}</h1>
             <h2 class="subheading">{{post.subtitle}}</h2>
             <span class="meta">Posted by
-              <a href="#">{{post.author}}</a>
-              on {{post.date}}</span>
+              <a href="#">{{post.author.username}}</a>
+              on
+              <a href="#">{{post.date}}</a>
+            </span>
           </div>
         </div>
       </div>
@@ -25,13 +27,13 @@
         <div class="col-lg-8 col-md-10 mx-auto">
             {{ post.body | safe }}
           <hr>
-
-            <div class="clearfix">
-              <a class="btn btn-primary float-right" href="{{url_for('edit_post', post_id = post.id)}}">
-                Edit Post
-              </a>
-            </div>
-
+          {% if is_authorized_user : %}
+          <div class="clearfix">
+            <a class="btn btn-primary float-right" href="{{url_for('edit_post', post_id = post.id)}}">
+              Edit Post
+            </a>
+          </div>
+          {% endif %}
 
 
 <!--           Comments Area -->
