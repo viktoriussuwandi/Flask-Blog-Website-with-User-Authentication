@@ -10,14 +10,12 @@ def get_all_posts() :
   users    = User.query.all()
   posts    = BlogPost.query.all()
   comments = Comment.query.all()
-  emails    = [ u["email"] for u in [ jsonable_encoder(u) for u in User.query.all() ] ]
-  return emails
-  # return render_template("index.html", 
-  #                        all_posts=posts, 
-  #                        all_users=users, 
-  #                        all_comments=comments,
-  #                        user = current_user
-  #                       )
+  return render_template("index.html", 
+                         all_posts=posts, 
+                         all_users=users, 
+                         all_comments=comments,
+                         user = current_user
+                        )
 
 @app.route("/about")
 def about(): return render_template("about.html", user = current_user)

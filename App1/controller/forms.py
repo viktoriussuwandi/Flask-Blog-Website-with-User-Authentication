@@ -17,9 +17,12 @@ class Post_Add_Form(FlaskForm):
   submit    = SubmitField("Post article")
 
 class Post_Edit_Form_As_Admin(FlaskForm):
-  emails    = [ u["email"] for u in [ jsonable_encoder(u) for u in User.query.all() ] ]
+  def __init__(self, *args, **kwargs):
+    super(FlaskForm, self).__init__(*args, **kwargs)
+    self.author.choices = [(i.username, i.email) for i in User.query.all()]
+  
   status    = SelectField("Status", choices = [('active','active'),('inactive','inactive')] )
-  # author    = SelectField("Author mail", choices = [ (m,m) for m in mail_list] )
+  author    = SelectField('Author', validators=[DataRequired()])
   title     = StringField("Blog Post Title", validators=[DataRequired()])
   subtitle  = StringField("Subtitle", validators=[DataRequired()])
   img_url   = StringField("Blog Image URL", validators=[DataRequired(), URL()])

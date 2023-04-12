@@ -30,7 +30,7 @@ class User(UserMixin, db.Model) :
   # one to many relationship - (User as parrent Comment as child)
   comments         = relationship("Comment",  back_populates="author")
 
-  def __repr__(self) : return '<User {self.title}>'
+  def __repr__(self) : return '<User {self.id}>'
   def to_dict(self)  : return {col.name : getattr(self, col.name) for col in self.__table__.columns}
 
 # ------------------------------------------------------------------
@@ -42,7 +42,7 @@ class Password(db.Model) :
   ori_password     = db.Column(db.String(250), nullable=False)
   encrypt_password = db.Column(db.String(250), nullable=False)
 
-  def __repr__(self) : return '<Password {self.title}>'
+  def __repr__(self) : return '<Password {self.id}>'
   def to_dict(self)  : return {col.name : getattr(self, col.name) for col in self.__table__.columns}
 
 # ------------------------------------------------------------------
