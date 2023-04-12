@@ -10,10 +10,10 @@ def get_all_posts() :
   users    = User.query.all()
   posts    = BlogPost.query.all()
   comments = Comment.query.all()
-  return render_template("index.html", 
-                         all_posts=posts, 
-                         all_users=users, 
-                         all_comments=comments,
+  return render_template("index.html",
+                         all_posts = posts, 
+                         all_users = users, 
+                         all_comments = comments,
                          user = current_user
                         )
 

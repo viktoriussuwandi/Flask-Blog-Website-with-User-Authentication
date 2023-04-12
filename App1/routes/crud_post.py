@@ -1,6 +1,6 @@
 from App1 import app, db, add_data_to_db, user_only, admin_only
 from App1.controller.forms  import Post_Add_Form, Post_Edit_Form_As_Admin, Post_Edit_Form_As_User
-from App1.controller.models import BlogPost
+from App1.controller.models import User, BlogPost
 
 from flask       import render_template, redirect, url_for, request, flash, abort
 from flask_login import current_user, login_required
@@ -22,30 +22,32 @@ def identify_edit_form(find_post) :
   is_authorize_user  = is_authorized(find_post) and current_user.role == "user"
   if is_authorize_admin :
     return Post_Edit_Form_As_Admin(
-      status   = find_post.status,  title  = find_post.title,  subtitle = find_post.subtitle,
-      img_url  = find_post.img_url, author = find_post.author.username, body    = find_post.body
-    )    
+      status  = find_post.status,  author   = find_post.author.id,
+      title   = find_post.title,   subtitle = find_post.subtitle,
+      img_url = find_post.img_url, body = find_post.body
+    )
   elif is_authorize_user :
     return Post_Edit_Form_As_User(
-      title   = find_post.title,  subtitle = find_post.subtitle,
-      img_url = find_post.img_url, author  = find_post.author.username, body    = find_post.body
+      title   = find_post.title,   subtitle = find_post.subtitle,
+      img_url = find_post.img_url, body    = find_post.body
     )
   else : return abort(401)
 
 def update_postInfo(find_post, form) :
   check_admin = is_authorized(find_post) and current_user.role == "admin"
-  if check_admin : find_post.status   = form.status.data
+  if check_admin :
+    find_post.status = form.status.data
+    # find_post.author = User.query.get( int(form.author.data) )
   find_post.title    = form.title.data
   find_post.subtitle = form.subtitle.data
   find_post.img_url  = form.img_url.data
-  find_post.author   = form.author.data
   find_post.body     = form.body.data
-  
+
   if is_authorized(find_post) :
     try : db.session.commit(); return True
     except Exception : db.session.rollback(); return False
   else : return False
-    
+
 # -------------------------------------------------------------------
 # ROUTES
 # -------------------------------------------------------------------
@@ -85,10 +87,10 @@ def edit_post(post_id) :
     edit_form  = identify_edit_form(find_post); form_valid = edit_form.validate_on_submit()
     if request.method == "POST" and form_valid :
       if not update_postInfo(find_post, edit_form) :
-        flash("update post unsuccessful", "danger")
+        flash("update article unsuccessful", "danger")
         return redirect(url_for("make-post.html", form = edit_form, user = current_user, activity = "editing" ))
       elif update_postInfo(find_post, edit_form) :
-        flash("update profile successful", "success")
+        flash("update article successful", "success")
         return redirect( url_for("show_post", post_id = find_post.id) )
   return render_template("make-post.html", form = edit_form, user = current_user, activity = "editing" )
 

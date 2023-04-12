@@ -1,11 +1,11 @@
+from App1.controller.models import User
+
 from flask_wtf        import FlaskForm
 from flask_ckeditor   import CKEditorField
 
 from wtforms            import StringField, SubmitField,PasswordField, SelectField
 from wtforms.validators import DataRequired, URL, Email
 
-from App1.controller.models import User
-from fastapi.encoders       import jsonable_encoder
 
 ##WTForm
 # ---------------------------------------------------------------------------------
@@ -19,10 +19,10 @@ class Post_Add_Form(FlaskForm):
 class Post_Edit_Form_As_Admin(FlaskForm):
   def __init__(self, *args, **kwargs):
     super(FlaskForm, self).__init__(*args, **kwargs)
-    self.author.choices = [(i.username, i.email) for i in User.query.all()]
+    self.author.choices = [(i.id, i.email) for i in User.query.all()]
   
   status    = SelectField("Status", choices = [('active','active'),('inactive','inactive')] )
-  author    = SelectField('Author', validators=[DataRequired()])
+  author    = SelectField('Author')
   title     = StringField("Blog Post Title", validators=[DataRequired()])
   subtitle  = StringField("Subtitle", validators=[DataRequired()])
   img_url   = StringField("Blog Image URL", validators=[DataRequired(), URL()])
