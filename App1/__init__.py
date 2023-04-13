@@ -7,10 +7,14 @@ from flask_sqlalchemy   import SQLAlchemy
 from werkzeug.security  import generate_password_hash, check_password_hash
 from flask_login        import LoginManager, current_user
 from functools          import wraps
+from flask_wtf          import CSRFProtect
+
 
 app = Flask(__name__)
 login_manager = LoginManager(app)
 ckeditor = CKEditor(app)
+
+CSRFProtect().init_app(app)
 Bootstrap(app)
 # login_manager.init_app(app)
 

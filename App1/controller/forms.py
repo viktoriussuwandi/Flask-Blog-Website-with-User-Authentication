@@ -1,5 +1,3 @@
-from App1.controller.models import User
-
 from flask_wtf        import FlaskForm
 from flask_ckeditor   import CKEditorField
 
@@ -17,9 +15,6 @@ class Post_Add_Form(FlaskForm):
   submit    = SubmitField("Post article")
 
 class Post_Edit_Form_As_Admin(FlaskForm):
-  def __init__(self, *args, **kwargs):
-    super(FlaskForm, self).__init__(*args, **kwargs)
-    self.author.choices = [(i.id, i.email) for i in User.query.all()]
   
   status    = SelectField("Status", choices = [('active','active'),('inactive','inactive')] )
   author    = SelectField('Author')
