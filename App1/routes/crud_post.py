@@ -1,10 +1,10 @@
-from App1 import app, db, add_data_to_db, user_only, admin_only
+from App1                   import app, db, add_data_to_db, user_only
 from App1.controller.forms  import Post_Add_Form, Post_Edit_Form_As_Admin, Post_Edit_Form_As_User
 from App1.controller.models import User, BlogPost
 
-from flask       import render_template, redirect, url_for, request, flash, abort, jsonify
+from flask       import render_template, redirect, url_for, request, flash, abort
 from flask_login import current_user, login_required
-from datetime import date
+from datetime    import date
 
 # -------------------------------------------------------------------
 # ADDITIONAL FUNTION
@@ -12,8 +12,10 @@ from datetime import date
 def is_authorized(post) :
   return (
     current_user.is_authenticated and current_user.role == "admin" and current_user.status == "active"
-    or (current_user.is_authenticated   and current_user.id == post.author.id and
-        current_user.status == "active" and current_user.email == post.author.email)
+    or ( post.status == "active" and
+         current_user.is_authenticated   and current_user.id    == post.author.id and
+         current_user.status == "active" and current_user.email == post.author.email
+       )
   )
 
 def identify_edit_form(find_post) :
@@ -26,14 +28,12 @@ def identify_edit_form(find_post) :
       img_url = find_post.img_url, body = find_post.body
     )
     form.author.choices = [ (u.id,u.email) for u in User.query.all() ]
-    return form
-    
+    return form  
   elif is_authorize_user :
     return Post_Edit_Form_As_User(
       title   = find_post.title,   subtitle = find_post.subtitle,
       img_url = find_post.img_url, body     = find_post.body
     )
-    
   else : return abort(401)
 
 def update_postInfo(find_post, form) :
@@ -54,11 +54,6 @@ def update_postInfo(find_post, form) :
 # -------------------------------------------------------------------
 # ROUTES
 # -------------------------------------------------------------------
-@app.route("/post/<int:post_id>")
-def show_post(post_id):
-  requested_post = BlogPost.query.get(post_id)
-  return render_template("post.html", post = requested_post, 
-                         user = current_user, is_authorized_user = is_authorized(requested_post))
 
 @app.route("/create_post", methods = ["GET", "POST"])
 @user_only
@@ -97,8 +92,9 @@ def edit_post(post_id) :
   return render_template("make-post.html", form = edit_form, user = current_user, activity = "editing" )
 
 @app.route("/close_post/<int:post_id>")
-@admin_only
+@login_required
 def delete_post(post_id) :
-  find_post = BlogPost.query.get( int(post_id) );
-  if find_post : find_post.status = "inactive"; db.session.commit()
+  find_post = BlogPost.query.get( int(post_id) )
+  if not is_authorized(find_post) : return abort(401)
+  else : find_post.status = "inactive"; db.session.commit()
   return redirect(url_for('get_all_posts'))

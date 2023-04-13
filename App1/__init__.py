@@ -79,4 +79,4 @@ def admin_only(funct) :
 # ------------------------------------------------------------------
 # Continue
 # ------------------------------------------------------------------
-from App1.routes import crud_post,crud_user, no_crud
+from App1.routes import crud_comment, crud_post,crud_user, no_crud

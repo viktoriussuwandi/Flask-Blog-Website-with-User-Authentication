@@ -7,6 +7,8 @@ from wtforms.validators import DataRequired, URL, Email
 
 ##WTForm
 # ---------------------------------------------------------------------------------
+# POST
+# ---------------------------------------------------------------------------------
 class Post_Add_Form(FlaskForm):
   title     = StringField("Blog Post Title", validators=[DataRequired()])
   subtitle  = StringField("Subtitle", validators=[DataRequired()])
@@ -32,10 +34,12 @@ class Post_Edit_Form_As_User(FlaskForm):
   submit   = SubmitField("Update Article")
 
 # ---------------------------------------------------------------------------------
+# USER
+# ---------------------------------------------------------------------------------
 class User_Login_Form(FlaskForm) :
   email    = StringField("Email", validators=[DataRequired(), Email()])
   password = PasswordField("Password", validators=[DataRequired()])
-  submit   = SubmitField("Login")
+  submit   = SubmitField("Let me In")
 
 class User_Add_Form(FlaskForm) :
   username = StringField("Username", validators=[DataRequired()])
@@ -56,3 +60,11 @@ class User_Edit_Form_As_User(FlaskForm) :
   email    = StringField("Email", validators=[DataRequired(), Email()])
   password = StringField("Password", validators=[DataRequired()])
   submit   = SubmitField("Update User")
+
+# ---------------------------------------------------------------------------------
+# COMMAND
+# ---------------------------------------------------------------------------------
+class Comment_Add_Form(FlaskForm) :
+  text   = CKEditorField("Blog Content", validators=[DataRequired()])
+  submit = SubmitField("Submit Comment")
+

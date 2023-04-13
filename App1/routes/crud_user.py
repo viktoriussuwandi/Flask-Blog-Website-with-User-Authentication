@@ -87,7 +87,8 @@ def add_user() :
     if find_user : flash("Email already exist", "danger"); return redirect(url_for('sign_in'))
     else :
       new_passw = Password( id = count_user + 1, ori_password = passw, encrypt_password = hash_salt_passw(passw))
-      new_user  = User( id = count_user + 1, email = mail, username = name, password = new_passw, role=identify_role(mail) )
+      new_user  = User( id   = count_user + 1, email = mail, username = name, password = new_passw, 
+                        role = "admin" if mail.split("@")[1] == "admin.com" else "user" )
       check_add_new_db = add_data_to_db(new_passw) is not False and add_data_to_db(new_user) is not False
       if check_add_new_db == True :  flash("Register successful", "success"); login_user(new_user); return redirect(url_for('get_all_posts'))
       else : flash(" Register unsuccessful", "danger"); return redirect(url_for('add_user'))
