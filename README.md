@@ -10,7 +10,7 @@
     * flask-SQLAlchemy as database modules.
     * wtform as form input and form validation.
     * werkzeug security for password hashing-salting.
-    * flask-login as user's login manager.
+    * flask-login as user's login manager and user's authentication.
 
 ## Development
-   under development
+
