@@ -13,4 +13,6 @@
     * flask-login as user's login manager and user's authentication.
 
 ## Development
+1. Establish model data required for application : `Users`, `BlogPosts`, and `Comments`.
+2. 
 
