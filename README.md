@@ -24,9 +24,9 @@
    - Doing additional activations, such as : `user's activation`, `post's activation`, and `comment's activation`.
         
 3. User's authorization divided into user's role, such as : `admin`, and `user`:
-   - Only admin can do activation activities.
-   - Only admin and authorized users can edit, and delete their own article
-   - Only admin can delete comments.
+   - Only `admin` can do `activation` activities.
+   - Only `admin` and `authorized users` can `edit`, and `delete` their own article
+   - Only `admin` can `delete` comments.
 
 ## Activities
 
@@ -36,7 +36,7 @@
 ![LOGOUT](App1/static/img/img_logout.gif)
 
 ### Posting article
-![img_post](App1/static/img/img_post.gif)
+![POSTING](App1/static/img/img_post.gif)
 
 ### Comment to an article
-![img_comment](App1/static/img/img_comment.gif)
+![COMMENT](App1/static/img/img_comment.gif)
