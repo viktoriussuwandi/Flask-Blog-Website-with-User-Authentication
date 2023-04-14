@@ -6,11 +6,11 @@
 #### Documentation can be found on : [https://github.com/viktoriussuwandi/Flask-Blog-Website-with-User-Authentication](https://github.com/viktoriussuwandi/Flask-Blog-Website-with-User-Authentication)
 
 ## Technology and Features :
-    * under development
-
-### Features Future Idea :
-    * User activation
-    * Forgot password
+    * python-flask, and jinja2 template for back end - front end.
+    * flask-SQLAlchemy as database modules.
+    * wtform as form input and form validation.
+    * werkzeug security for password hashing-salting.
+    * flask-login as user's login manager.
 
 ## Development
    under development
