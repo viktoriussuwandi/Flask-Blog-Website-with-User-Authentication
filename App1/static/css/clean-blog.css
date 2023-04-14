@@ -149,6 +149,7 @@ img::-moz-selection {
 }
 .commentText p {
     margin:0;
+    font-size:12px;
 }
 .sub-text {
     color:#aaa;

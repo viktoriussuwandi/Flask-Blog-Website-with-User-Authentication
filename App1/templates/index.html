@@ -25,7 +25,9 @@
         {% if messages %}
           {% for category, message in messages %}
           <div class="alert alert-{{ category }} alert-dismissible" role="alert">
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
             {{ message }}
           </div>
           {% endfor %}
@@ -35,7 +37,7 @@
     </div>
   </div>
 
-  {% if user.role == "admin" %}
+  {% if users and user.role == "admin" %}
   <div class="container">
     <div class="row">
       <div class="col-lg-8 col-md-10 mx-auto">
@@ -57,18 +59,22 @@
   </div>
   {% endif %}
 
+  {% if comments and user.role == "admin" %}
   <div class="container">
     <div class="row">
       <div class="col-lg-8 col-md-10 mx-auto">
         {% for comment in all_comments %}
         <div class="post-preview">
-          <a class="text-danger" href="{{url_for('delete_comment', comment_id = comment.id) }}">✘</a>
-          <p>{{ comment.id }} - {{ comment.text }}</p>
+          <p>
+            {{ comment.id }} - {{ comment.text }}
+            <a class="text-danger" href="{{url_for('delete_comment', comment_id = comment.id) }}">✘</a>
+          </p>
         </div>
         {% endfor %}
       </div>
     </div>
   </div>
+  {% endif %}
 
   <div class="container">
     <div class="row">
@@ -102,6 +108,7 @@
       </div>
     </div>
   </div>
+
   <hr>
 
 {% include "footer.html" %}
