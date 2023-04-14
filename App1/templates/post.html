@@ -77,6 +77,7 @@
             <div class="commenterImage">
               <img src="https://pbs.twimg.com/profile_images/744849215675838464/IH0FNIXk.jpg"/>
             </div>
+            <span class="date sub-text">{{ comment.author.username }}</span>
             <div class="commentText">
               <p>
                 ID : {{ comment.id }} Text : {{ comment.text | safe }}
@@ -86,7 +87,6 @@
                   <a class="text-primary" href="{{url_for('config_comment', comment_id = comment.id) }}">✓</a>
                 {% endif %}
               </p>
-              <span class="date sub-text">{{ comment.author.username }}</span>
             </div>
           </li>
           {% endfor %}
