@@ -14,5 +14,29 @@
 
 ## Development
 1. Establish model data required for application : `Users`, `BlogPosts`, and `Comments`.
-2. 
+   Each table has attributes, and relationship as below :
+  ![1b](App1/static/img/1b.png)![1a](App1/static/img/1a.png)
 
+2. User's activities consists of :
+   - `Add` new user, `Edit` and `delete` existing user's profile.
+   - `Post` new article, Edit and `delete` existing article.
+   - `Comment` to an article, and `delete` existing comment.
+   - Doing additional activations, such as : `user's activation`, `post's activation`, and `comment's activation`.
+        
+3. User's authorization divided into user's role, such as : `admin`, and `user`:
+   - Only admin can do activation activities.
+   - Only admin and authorized users can edit, and delete their own article
+   - Only admin can delete comments.
+
+## Activities
+
+### Register, login, and logout
+![REGISTER](App1/static/img/img_register.gif)
+![LOGIN](App1/static/img/img_login.gif)
+![LOGOUT](App1/static/img/img_logout.gif)
+
+### Posting article
+![img_post](App1/static/img/img_post.gif)
+
+### Comment to an article
+![img_comment](App1/static/img/img_comment.gif)
